@@ -134,7 +134,7 @@
     function generateInvoiceNumber() {
       const now = new Date();
       const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
-      return `INV-${dateStr}-`; // Server will append sequential number
+      return `INV-${dateStr}-`; // Server appends sequential number
     }
 
     function add(item) {
@@ -251,7 +251,7 @@
       if (act === 'add') add(payload); else rem(payload);
     });
 
-    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbxX6Jh-Ap8ZdOZzgrgLw-JDBRhw1wGij1FoJHS1cjz_uJwQV4eCIcRCd_3EPjK2tiP1/exec';
+    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec';
     const loader = $('#loader');
     const toast = $('#toast');
 
@@ -290,7 +290,7 @@
       const orderTotal = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(orderVat)).toFixed(2);
       return {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
-        invoicePrefix: generateInvoiceNumber(), // Send prefix, server assigns full number
+        invoicePrefix: generateInvoiceNumber(),
         customerName: $('#customer-name').value,
         deliveryAddress: $('#delivery-address').value,
         whatsapp,
@@ -315,6 +315,9 @@
           headers: { 'Content-Type': 'text/plain' },
           mode: 'cors'
         });
+        if (!res.ok) {
+          throw new Error(`HTTP error: ${res.status} ${res.statusText}`);
+        }
         const result = await res.json();
         console.log('Response:', result);
         loader.style.display = 'none';
