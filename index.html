@@ -134,8 +134,7 @@
     function generateInvoiceNumber() {
       const now = new Date();
       const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
-      const random = Math.random().toString(36).slice(2,7).toUpperCase();
-      return `INV-${dateStr}-${random}`;
+      return `INV-${dateStr}-`; // Server will append sequential number
     }
 
     function add(item) {
@@ -267,7 +266,7 @@
       for (let id of inputs) {
         if (!$(`#${id}`).value) throw new Error('Por favor, completa todos los campos');
       }
-      const whatsapp = $('#whatsapp').value.replace(/\s/g, ''); // Remove spaces
+      const whatsapp = $('#whatsapp').value.replace(/\s/g, '');
       if (!whatsapp.match(/^5939[0-9]{8}$/)) throw new Error('Número de WhatsApp debe ser 593 seguido de 9 dígitos comenzando con 9 (ej. 5939********)');
       if (cart.size === 0) throw new Error('Carrito vacío');
       let itemsSubtotal = 0;
@@ -291,7 +290,7 @@
       const orderTotal = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(orderVat)).toFixed(2);
       return {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
-        invoiceNumber: generateInvoiceNumber(),
+        invoicePrefix: generateInvoiceNumber(), // Send prefix, server assigns full number
         customerName: $('#customer-name').value,
         deliveryAddress: $('#delivery-address').value,
         whatsapp,
@@ -309,7 +308,7 @@
       loader.style.display = 'flex';
       try {
         const data = await collectData();
-        console.log('Sending payload:', JSON.stringify(data, null, 2)); // Debug payload
+        console.log('Sending payload:', JSON.stringify(data, null, 2));
         const res = await fetch(ENDPOINT_SHEET, {
           method: 'POST',
           body: JSON.stringify(data),
@@ -317,11 +316,11 @@
           mode: 'cors'
         });
         const result = await res.json();
-        console.log('Response:', result); // Debug response
+        console.log('Response:', result);
         loader.style.display = 'none';
-        if (result.success) {
-          const phone = data.whatsapp; // Already cleaned of spaces
-          const message = encodeURIComponent(`Gracias por tu pedido! Factura ${data.invoiceNumber} - Total: $${data.orderTotal}`);
+        if (result.success && result.invoiceNumber) {
+          const phone = data.whatsapp;
+          const message = encodeURIComponent(`Gracias por tu pedido! Factura ${result.invoiceNumber} - Total: $${data.orderTotal}`);
           window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
           showToast();
           cart.clear();
