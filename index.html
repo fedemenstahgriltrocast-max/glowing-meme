@@ -94,7 +94,7 @@
         <div class="customer-form">
           <label>Nombre del Cliente<input id="customer-name" class="input-field" required></label>
           <label>Dirección de Entrega<input id="delivery-address" class="input-field" required></label>
-          <label>Número de WhatsApp<input id="whatsapp" class="input-field" value="593" pattern="593[0-9]{7}" title="Número de WhatsApp debe comenzar con 593 seguido de 7 dígitos" required></label>
+          <label>Número de WhatsApp<input id="whatsapp" class="input-field" value="593" pattern="5939[0-9]{8}" title="Número de WhatsApp debe ser 593 seguido de 9 dígitos comenzando con 9 (ej. 5939********)" required></label>
           <label>Correo del Cliente<input id="customer-email" class="input-field" type="email" required></label>
           <label>Correo del Negocio<input id="business-email" class="input-field" type="email" required></label>
         </div>
@@ -267,8 +267,8 @@
       for (let id of inputs) {
         if (!$(`#${id}`).value) throw new Error('Por favor, completa todos los campos');
       }
-      const whatsapp = $('#whatsapp').value;
-      if (!whatsapp.match(/^593[0-9]{7}$/)) throw new Error('Número de WhatsApp debe ser 593 seguido de 7 dígitos');
+      const whatsapp = $('#whatsapp').value.replace(/\s/g, ''); // Remove spaces
+      if (!whatsapp.match(/^5939[0-9]{8}$/)) throw new Error('Número de WhatsApp debe ser 593 seguido de 9 dígitos comenzando con 9 (ej. 5939********)');
       if (cart.size === 0) throw new Error('Carrito vacío');
       let itemsSubtotal = 0;
       const orderItems = Array.from(cart.values()).map(line => {
@@ -320,6 +320,9 @@
         console.log('Response:', result); // Debug response
         loader.style.display = 'none';
         if (result.success) {
+          const phone = data.whatsapp; // Already cleaned of spaces
+          const message = encodeURIComponent(`Gracias por tu pedido! Factura ${data.invoiceNumber} - Total: $${data.orderTotal}`);
+          window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
           showToast();
           cart.clear();
           $('#customer-name').value = '';
