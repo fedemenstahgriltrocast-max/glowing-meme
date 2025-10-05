@@ -138,7 +138,7 @@
     }
 
     function add(item) {
-      const line = cart.get(item.id) || { ...item, qty:0 };
+      const line = cart.get(item.id) || { ...item, qty:0, name: (OPTIONS.find(x=>x.id===item.id)?.name?.[currentLang] || EXTRAS.find(x=>x.id===item.id)?.name?.[currentLang] || item.name) };
       line.qty++; cart.set(item.id, line);
       const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
       if(isDark){
@@ -241,17 +241,20 @@
       if (!btn) return;
       const id = btn.getAttribute('data-id');
       const act = btn.getAttribute('data-act');
-      let payload = { 
-        id, 
-        name: OPTIONS.find(x => x.id === id)?.name?.[currentLang] || EXTRAS.find(x => x.id === id)?.name?.[currentLang] || cart.get(id)?.name, 
-        priceCents: OPTIONS.find(x => x.id === id)?.priceCents || EXTRAS.find(x => x.id === id)?.priceCents || cart.get(id)?.priceCents 
+      let payload = {
+        id,
+        name: OPTIONS.find(x => x.id === id)?.name?.[currentLang] || EXTRAS.find(x => x.id === id)?.name?.[currentLang] || cart.get(id)?.name,
+        priceCents: OPTIONS.find(x => x.id === id)?.priceCents || EXTRAS.find(x => x.id === id)?.priceCents || cart.get(id)?.priceCents
       };
       const desc = btn.getAttribute('data-desc');
       if (desc) payload.desc = desc;
       if (act === 'add') add(payload); else rem(payload);
     });
 
-    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec';
+    // ==== IMPORTANT: paste your GAS Web App /exec URL here ====
+    const ENDPOINT_SHEET = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_EXEC_URL_HERE';
+    // ==========================================================
+
     const loader = $('#loader');
     const toast = $('#toast');
 
@@ -308,18 +311,19 @@
       loader.style.display = 'flex';
       try {
         const data = await collectData();
-        console.log('Sending payload:', JSON.stringify(data, null, 2));
         const res = await fetch(ENDPOINT_SHEET, {
           method: 'POST',
           body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain' },
+          headers: { 'Content-Type': 'text/plain' }, // avoids preflight; GAS accepts it
           mode: 'cors'
         });
-        if (!res.ok) {
-          throw new Error(`HTTP error: ${res.status} ${res.statusText}`);
-        }
-        const result = await res.json();
-        console.log('Response:', result);
+
+        // Robust parse: never crash on non-JSON
+        const text = await res.text();
+        let result;
+        try { result = JSON.parse(text); }
+        catch { throw new Error(`Respuesta no-JSON de Apps Script:\n${text.slice(0, 400)}`); }
+
         loader.style.display = 'none';
         if (result.success && result.invoiceNumber) {
           const phone = data.whatsapp;
@@ -350,3 +354,4 @@
   </script>
 </body>
 </html>
+
