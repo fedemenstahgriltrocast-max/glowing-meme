@@ -94,7 +94,7 @@
         <div class="customer-form">
           <label>Nombre del Cliente<input id="customer-name" class="input-field" required></label>
           <label>Dirección de Entrega<input id="delivery-address" class="input-field" required></label>
-          <label>Número de WhatsApp<input id="whatsapp" class="input-field" value="+593" pattern="\+593[0-9]{9}" required></label>
+          <label>Número de WhatsApp<input id="whatsapp" class="input-field" value="593" pattern="593[0-9]{7}" title="Número de WhatsApp debe comenzar con 593 seguido de 7 dígitos" required></label>
           <label>Correo del Cliente<input id="customer-email" class="input-field" type="email" required></label>
           <label>Correo del Negocio<input id="business-email" class="input-field" type="email" required></label>
         </div>
@@ -252,7 +252,7 @@
       if (act === 'add') add(payload); else rem(payload);
     });
 
-    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbwTrQ1Svwx8gHTu1oTdSGzyH30m4inGTxMKrBBXS9i7wdODLnNvenN-epDZPU3Gnx8/exec'; // Replace with your deployed web app URL
+    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec';
     const loader = $('#loader');
     const toast = $('#toast');
 
@@ -267,31 +267,40 @@
       for (let id of inputs) {
         if (!$(`#${id}`).value) throw new Error('Por favor, completa todos los campos');
       }
+      const whatsapp = $('#whatsapp').value;
+      if (!whatsapp.match(/^593[0-9]{7}$/)) throw new Error('Número de WhatsApp debe ser 593 seguido de 7 dígitos');
       if (cart.size === 0) throw new Error('Carrito vacío');
       let itemsSubtotal = 0;
-      cart.forEach(line => { itemsSubtotal += line.priceCents * line.qty; });
+      const orderItems = Array.from(cart.values()).map(line => {
+        const itemSubtotal = line.priceCents * line.qty / 100;
+        itemsSubtotal += itemSubtotal * 100;
+        return {
+          item: line.name,
+          description: line.desc || line.name,
+          price: (line.priceCents / 100).toFixed(2),
+          qty: line.qty,
+          subtotal: itemSubtotal.toFixed(2),
+          vat: (itemSubtotal * IVA_RATE).toFixed(2),
+          total: (itemSubtotal * (1 + IVA_RATE)).toFixed(2)
+        };
+      });
       const delivery = parseFloat($('#delivery-fee').value) || 0;
       const deliveryFee = delivery.toFixed(2);
-      const vat = (itemsSubtotal * IVA_RATE / 100).toFixed(2);
-      const total = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(vat)).toFixed(2);
-      const orderItems = Array.from(cart.values()).map(line => ({
-        item: line.name,
-        description: line.desc || line.name,
-        qty: line.qty,
-        totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
-      }));
+      const orderSubtotal = (itemsSubtotal / 100).toFixed(2);
+      const orderVat = (itemsSubtotal * IVA_RATE / 100).toFixed(2);
+      const orderTotal = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(orderVat)).toFixed(2);
       return {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
         invoiceNumber: generateInvoiceNumber(),
         customerName: $('#customer-name').value,
         deliveryAddress: $('#delivery-address').value,
-        whatsapp: $('#whatsapp').value,
+        whatsapp,
         customerEmail: $('#customer-email').value,
         businessEmail: $('#business-email').value,
-        subtotal: (itemsSubtotal / 100).toFixed(2),
+        orderSubtotal,
         deliveryFee,
-        vat,
-        total,
+        orderVat,
+        orderTotal,
         orderItems
       };
     }
@@ -300,6 +309,7 @@
       loader.style.display = 'flex';
       try {
         const data = await collectData();
+        console.log('Sending payload:', JSON.stringify(data, null, 2)); // Debug payload
         const res = await fetch(ENDPOINT_SHEET, {
           method: 'POST',
           body: JSON.stringify(data),
@@ -307,13 +317,14 @@
           mode: 'cors'
         });
         const result = await res.json();
+        console.log('Response:', result); // Debug response
         loader.style.display = 'none';
         if (result.success) {
           showToast();
           cart.clear();
           $('#customer-name').value = '';
           $('#delivery-address').value = '';
-          $('#whatsapp').value = '+593';
+          $('#whatsapp').value = '593';
           $('#customer-email').value = '';
           $('#business-email').value = '';
           render();
@@ -323,6 +334,7 @@
       } catch (err) {
         loader.style.display = 'none';
         showToast(err.message || 'Error al enviar. Intenta de nuevo.', 3000);
+        console.error('Fetch error:', err);
       }
     });
 
