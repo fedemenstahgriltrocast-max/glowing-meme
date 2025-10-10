@@ -1,0 +1,7 @@
+name = "marxia-orden-rapida"
+main = "worker.js"
+compatibility_date = "2024-11-20"
+
+[vars]
+# Plaintext variable (intentionally non-secret, per your request)
+APPS_SCRIPT_ID = "1g8N_zR0q0OHt3kqXwR0YhtTZ_xysQLGcXPq1XKXNbtyXHfEiUAyM5_4H"
