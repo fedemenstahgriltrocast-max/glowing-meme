@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marxia — Orden Rápida</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --fg:#e8eef6; --card:#161a2b; --line:#2b2f40; --muted:#a9b3c3;
+      --op1:#7aa8ff; --op2:#22c3a6; --op3:#ff8ab3; --op4:#c466ff; --ex:#c3b5ff;
+      --radius:14px; --gap:1rem; --pad:1rem;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0e1324,#0b1720,#151a2e);color:var(--fg);min-height:100%}
+    body{display:flex;align-items:center;justify-content:center}
+    .wrap{width:100%;max-width:1200px;margin:auto;padding:2rem 1rem}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+    h1{margin:0;font-size:1.8rem}
+    .controls{display:flex;gap:.5rem}
+    .toggle{padding:.5rem 1rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;font-weight:700;cursor:pointer}
+    .layout{display:grid;grid-template-columns:1fr .8fr;gap:var(--gap)}
+    @media (max-width:900px){.layout{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad)}
+    aside.card{display:flex;flex-direction:column}
+    .title{font-size:1.2rem;font-weight:800;margin:0 0 1rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:var(--gap)}
+    .opt{background:rgba(255,255,255,.02);border:2px solid var(--line);border-radius:var(--radius);padding:1rem;transition:transform .15s ease,background .15s ease}
+    .opt:hover{background:rgba(255,255,255,.05);transform:scale(1.02)}
+    .top{display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem}
+    .btn50{width:44px;height:35px;border:none;border-radius:8px;font-weight:900;color:#111}
+    .op1{background:var(--op1)} .op2{background:var(--op2)} .op3{background:var(--op3)} .op4{background:var(--op4)}
+    .desc{color:var(--muted);font-size:.95rem}
+    .actions{display:flex;gap:.5rem;margin-top:.6rem}
+    .btn{padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--fg);font-weight:800;border-radius:10px;cursor:pointer;font-size:13px;white-space:nowrap;transition:background .15s ease,color .15s ease,border-color .15s ease}
+    .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important;border-color:#22c3a6 !important}
+    .ex-list{display:flex;flex-direction:column;gap:.75rem}
+    .ex-row{display:grid;grid-template-columns:1fr auto;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
+    .ex-left{display:flex;align-items:center;gap:1rem;font-weight:800}
+    .ex-price{font-size:.9rem;padding:.35rem .7rem;border-radius:8px;border:1px dashed var(--line);background:rgba(255,255,255,.05);font-weight:800}
+    .cart{border:1px dashed var(--line);border-radius:var(--radius);padding:1rem;max-height:320px;overflow:auto}
+    .line{display:grid;grid-template-columns:1fr auto auto;gap:.6rem;align-items:center;padding:.6rem 0;border-bottom:1px dotted rgba(255,255,255,.06)}
+    .qtybox{display:flex;align-items:center;gap:.5rem}
+    .totals{margin-top:1rem;display:grid;gap:.5rem}
+    .totals .row{display:flex;justify-content:space-between;align-items:center}
+    .grand{font-size:1.6rem;font-weight:900}
+    .input-field{width:100%;padding:0.5rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;margin-top:0.25rem}
+    .customer-form{margin-top:1rem;display:grid;gap:0.5rem}
+    .customer-form label{display:flex;flex-direction:column;font-size:0.9rem}
+    .send-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
+    .send-btn:active{transform:translateY(1px)}
+    .send-btn:hover{background:#1aa58a}
+    .accept-btn{margin-top:1.2rem;padding:1rem 2rem;font-size:1.2rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 6px 18px rgba(0,0,0,.22);transition:transform .06s ease,background .2s ease}
+    .accept-btn:active{transform:translateY(1px)}
+    .accept-btn:hover{background:#1aa58a}
+    .invoice-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op1);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
+    .invoice-btn:active{transform:translateY(1px)}
+    .invoice-btn:hover{background:#5a9aff}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22c3a6;color:#0b0f18;padding:.75rem 1.1rem;border-radius:12px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:10000}
+    .toast.show{opacity:1}
+    .loader-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999}
+    .loader{width:54px;height:54px;border:6px solid rgba(255,255,255,.25);border-top-color:#22c3a6;border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    [data-theme="light"] body{background:linear-gradient(135deg,#f3fbf7,#eaf2ff,#ffe9ef)}
+    [data-theme="light"] .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Orden Rápida</h1>
+      <div class="controls">
+        <button id="lang" class="toggle" aria-label="EN/ES">ES</button>
+        <button id="theme" class="toggle" aria-label="Light/Dark">🌙</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="card">
+        <h2 class="title">Opciones</h2>
+        <div id="opts" class="grid"></div>
+
+        <div class="card" style="margin-top:14px">
+          <h2 class="title">Extras</h2>
+          <div id="extras" class="ex-list"></div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2 class="title">Resumen</h2>
+        <div id="cart" class="cart" aria-live="polite" aria-atomic="true"></div>
+
+        <div class="totals" aria-live="polite" aria-atomic="true">
+          <div class="row"><div>Subtotal</div><div id="subtotal">—</div></div>
+          <div class="row"><div>Delivery Fee</div><div><input id="delivery-fee" type="number" value="5.00" step="0.01" min="0" style="width:80px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;"> USD</div></div>
+          <div class="row"><div>IVA (15%)</div><div id="vat">—</div></div>
+          <div class="row"><div class="grand">TOTAL</div><div id="total" class="grand">—</div></div>
+        </div>
+
+        <div class="customer-form">
+          <label>Nombre del Cliente<input id="customer-name" class="input-field" required></label>
+          <label>Dirección de Entrega<input id="delivery-address" class="input-field" required></label>
+          <label>WhatsApp Number<input id="whatsapp" class="input-field" value="+593 ** *** ****" required></label>
+          <label>Customer Email<input id="customer-email" class="input-field" type="email" required></label>
+          <label>Business Email<input id="business-email" class="input-field" type="email" value="" required></label>
+        </div>
+
+        <button id="accept" class="accept-btn">Send to Sheets</button>
+        <button id="invoice" class="invoice-btn">Send Full Invoice (PDF)</button>
+      </aside>
+    </div>
+  </div>
+
+  <div id="loader" class="loader-overlay"><div class="loader"></div></div>
+  <div id="toast" class="toast">¡Pedido enviado con éxito!</div>
+
+  <script>
+    const IVA_RATE = 0.15;
+    const LOCALE = { es: 'es-EC', en: 'en-US' };
+    let currentLang = 'es';
+
+    const OPTIONS = [
+      { id:'op1', name:{es:'Opción 1',en:'Option 1'}, desc:{es:'Tortilla + Huevos + Chorizo + Bebida', en:'Tortilla + Eggs + Sausage + Drink'}, priceCents:320 },
+      { id:'op2', name:{es:'Opción 2',en:'Option 2'}, desc:{es:'Tortilla + Chorizo + Bebida', en:'Tortilla + Sausage + Drink'}, priceCents:270 },
+      { id:'op3', name:{es:'Opción 3',en:'Option 3'}, desc:{es:'Tortilla + Huevos + Bebida', en:'Tortilla + Eggs + Drink'}, priceCents:270 },
+      { id:'op4', name:{es:'Opción 4',en:'Option 4'}, desc:{es:'2 Tortilla + 2 Huevos + 2 Chorizo + 2 Bebida', en:'2 Tortillas + 2 Eggs + 2 Sausages + 2 Drinks'}, priceCents:640 }
+    ];
+    const EXTRAS = [
+      { id:'ex_cafe', name:{es:'Café',en:'Coffee'}, priceCents:70 },
+      { id:'ex_cola', name:{es:'Cola',en:'Cola'}, priceCents:70 },
+      { id:'ex_chorizo', name:{es:'Chorizo',en:'Sausage'}, priceCents:70 },
+      { id:'ex_huevo', name:{es:'Huevo',en:'Egg'}, priceCents:70 },
+      { id:'ex_tortilla', name:{es:'Tortilla',en:'Tortilla'}, priceCents:70 }
+    ];
+
+    const cart = new Map();
+    const $ = s => document.querySelector(s);
+    const t = v => typeof v === 'string' ? v : v[currentLang];
+    const money = c => (c/100).toLocaleString(LOCALE[currentLang], { style:'currency', currency:'USD' });
+
+    function generateInvoiceNumber() {
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
+      const random = Math.random().toString(36).slice(2,7).toUpperCase();
+      return `INV-${dateStr}-${random}`;
+    }
+
+    function add(item){
+      const line = cart.get(item.id) || { ...item, qty:0 };
+      line.qty++; cart.set(item.id, line);
+      const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+      if(isDark){
+        const btn = document.querySelector(`button[data-act="add"][data-id="${item.id}"]`);
+        if(btn){ btn.classList.add('btn-adding'); setTimeout(()=>btn.classList.remove('btn-adding'), 2000); }
+      }
+      render();
+    }
+    function rem(item){
+      if(!cart.has(item.id)) return;
+      const line = cart.get(item.id); line.qty--;
+      if(line.qty<=0) cart.delete(item.id); else cart.set(item.id, line);
+      render();
+    }
+
+    function buildOptions(){
+      const host = $('#opts'); host.innerHTML='';
+      OPTIONS.forEach((o,i)=>{
+        const descEsc = t(o.desc).replace(/"/g, '&quot;');
+        const el = document.createElement('div');
+        el.className='opt';
+        el.innerHTML = `
+          <div class="top">
+            <button class="btn50 op${(i%4)+1}">${i+1}</button>
+            <div>
+              <div class="desc">${t(o.desc)} — <strong>${money(o.priceCents)}</strong></div>
+              <div class="actions">
+                <button class="btn" data-act="rem" data-id="${o.id}">− Quitar</button>
+                <button class="btn" data-act="add" data-id="${o.id}" data-desc="${descEsc}">+ Agregar</button>
+              </div>
+            </div>
+          </div>`;
+        host.appendChild(el);
+      });
+    }
+    function buildExtras(){
+      const host = $('#extras'); host.innerHTML='';
+      EXTRAS.forEach(e=>{
+        const nameEsc = t(e.name).replace(/"/g, '&quot;');
+        const row = document.createElement('div');
+        row.className='ex-row';
+        row.innerHTML = `
+          <div class="ex-left">${t(e.name)} <span class="ex-price">${money(e.priceCents)}</span></div>
+          <div class="actions">
+            <button class="btn" data-act="rem" data-id="${e.id}">−</button>
+            <button class="btn" data-act="add" data-id="${e.id}" data-desc="${nameEsc}">+ Agregar</button>
+          </div>`;
+        host.appendChild(row);
+      });
+    }
+
+    function render(){
+      const box = $('#cart'); box.innerHTML='';
+      let subtotal = 0;
+      cart.forEach(line=>{
+        subtotal += line.priceCents * line.qty;
+        const el = document.createElement('div');
+        el.className='line';
+        const displayName = line.desc ? `${line.name} (${line.desc})` : line.name;
+        el.innerHTML = `
+          <div>${displayName}</div>
+          <div class="qtybox">
+            <button class="btn" data-act="rem" data-id="${line.id}">−</button>
+            <span>${line.qty}</span>
+            <button class="btn" data-act="add" data-id="${line.id}">+</button>
+          </div>
+          <div><strong>${money(line.priceCents*line.qty)}</strong></div>`;
+        box.appendChild(el);
+      });
+      const deliveryInput = $('#delivery-fee');
+      const delivery = parseFloat(deliveryInput.value) || 0;
+      const deliveryCents = Math.round(delivery * 100);
+      const vat = Math.round(subtotal * IVA_RATE);
+      const total = subtotal + vat + deliveryCents;
+      $('#subtotal').textContent = money(subtotal);
+      $('#vat').textContent = money(vat);
+      $('#total').textContent = money(total);
+    }
+
+    deliveryFeeInput = $('#delivery-fee');
+    if(deliveryFeeInput) deliveryFeeInput.addEventListener('input', render);
+
+    $('#lang').addEventListener('click', ()=>{
+      currentLang = currentLang==='es' ? 'en' : 'es';
+      $('#lang').textContent = currentLang.toUpperCase();
+      buildOptions(); buildExtras(); render();
+    });
+    $('#theme').addEventListener('click', ()=>{
+      const root = document.documentElement;
+      const cur = root.getAttribute('data-theme') || 'dark';
+      const next = cur==='dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      $('#theme').textContent = next==='light' ? '🌞' : '🌙';
+    });
+
+    document.body.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-act]');
+      if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      const act = btn.getAttribute('data-act');
+      let payload = { id, name: OPTIONS.find(x=>x.id===id)?.name?.[currentLang] || EXTRAS.find(x=>x.id===id)?.name?.[currentLang] || cart.get(id)?.name, priceCents: OPTIONS.find(x=>x.id===id)?.priceCents || EXTRAS.find(x=>x.id===id)?.priceCents || cart.get(id)?.priceCents };
+      const desc = btn.getAttribute('data-desc');
+      if(desc) payload.desc = desc;
+      const item = { ...payload };
+      if(act==='add') add(item); else rem(item);
+    });
+
+    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec'; // Replace with your direct Sheets GAS URL
+    const ENDPOINT_INVOICE = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec'; // Replace with your invoice GAS URL
+    const loader = $('#loader');
+    const toast  = $('#toast');
+    function showToast(msg, ms=1800){
+      toast.textContent = msg || '¡Pedido enviado con éxito!';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), ms);
+    }
+
+    async function collectData() {
+      const inputs = ['customer-name', 'delivery-address', 'whatsapp', 'customer-email', 'business-email'];
+      for(let id of inputs) {
+        if(!$(`#${id}`).value) throw new Error('Please fill all fields');
+      }
+      if(cart.size === 0) throw new Error('Carrito vacío');
+      const subtotalCents = 0; // calculated in render, but recompute
+      let itemsSubtotal = 0;
+      cart.forEach(line => { itemsSubtotal += line.priceCents * line.qty; });
+      const delivery = parseFloat($('#delivery-fee').value) || 0;
+      const deliveryFee = delivery.toFixed(2);
+      const vat = (itemsSubtotal * IVA_RATE / 100).toFixed(2);
+      const total = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(vat)).toFixed(2);
+      const orderItems = Array.from(cart.values()).map(line => ({
+        item: line.name,
+        description: line.desc || line.name,
+        qty: line.qty,
+        totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
+      }));
+      const data = {
+        date: new Date().toLocaleDateString(LOCALE[currentLang]),
+        invoiceNumber: generateInvoiceNumber(),
+        customerName: $('#customer-name').value,
+        deliveryAddress: $('#delivery-address').value,
+        whatsapp: $('#whatsapp').value,
+        customerEmail: $('#customer-email').value,
+        businessEmail: $('#business-email').value,
+        subtotal: (itemsSubtotal / 100).toFixed(2),
+        deliveryFee,
+        vat,
+        total,
+        orderItems
+      };
+      return data;
+    }
+
+    $('#accept').addEventListener('click', async ()=>{
+      loader.style.display = 'flex';
+      try {
+        const data = await collectData();
+        const res = await fetch(ENDPOINT_SHEET, {
+          method:'POST',
+          body: JSON.stringify(data),
+          headers: { 'Content-Type': 'text/plain' },
+          mode: 'cors'
+        });
+        loader.style.display = 'none';
+        if(res.ok && (await res.text()).includes('Success')) {
+          showToast();
+          cart.clear(); render();
+        } else {
+          throw new Error();
+        }
+      } catch(err) {
+        loader.style.display = 'none';
+        showToast(err.message || 'Error al enviar. Intenta de nuevo.', 3000);
+      }
+    });
+
+    $('#invoice').addEventListener('click', async ()=>{
+      loader.style.display = 'flex';
+      try {
+        const data = await collectData();
+        const res = await fetch(ENDPOINT_INVOICE, {
+          method:'POST',
+          body: JSON.stringify(data),
+          headers: { 'Content-Type': 'text/plain' },
+          mode: 'cors'
+        });
+        const resp = await res.json();
+        loader.style.display = 'none';
+        if(resp.success) {
+          const phone = data.whatsapp.replace(/\D/g, '');
+          const message = encodeURIComponent(`Invoice ${data.invoiceNumber} - Total: $${data.total}. PDF: ${resp.pdfUrl}`);
+          window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+          showToast('¡Factura enviada con éxito!');
+          cart.clear(); render();
+        } else {
+          throw new Error();
+        }
+      } catch(err) {
+        loader.style.display = 'none';
+        showToast(err.message || 'Error al enviar factura. Intenta de nuevo.', 3000);
+      }
+    });
+
+    (function init(){
+      document.documentElement.setAttribute('data-theme','dark');
+      buildOptions(); buildExtras(); render();
+    })();
+  </script>
+</body>
+</html>
