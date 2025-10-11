@@ -448,8 +448,27 @@
       }
       if(cart.size === 0) throw new Error(copy.cartEmptyError);
 
-      let itemsSubtotal = 0;
-      cart.forEach(line => { itemsSubtotal += line.priceCents * line.qty; });
+      const normalizedItems = Array.from(cart.values()).map(rawLine => {
+        const fallback = getCatalogItem(rawLine.id) || rawLine;
+        const texts = getItemTexts(rawLine.id, fallback);
+        const qty = Number.parseInt(rawLine.qty, 10) || 0;
+        const unitCents = Number.isFinite(rawLine.priceCents)
+          ? rawLine.priceCents
+          : (fallback?.priceCents ?? 0);
+        const lineTotalCents = unitCents * qty;
+        return {
+          id: rawLine.id || fallback?.id || '',
+          name: texts.name,
+          description: texts.desc || texts.name,
+          quantity: qty,
+          unitPriceCents: unitCents,
+          unitPrice: (unitCents / 100).toFixed(2),
+          lineTotalCents,
+          lineTotal: (lineTotalCents / 100).toFixed(2)
+        };
+      }).filter(item => item.quantity > 0);
+
+      const itemsSubtotal = normalizedItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
 
       const toggle = deliveryToggle();
       const deliveryEnabled = toggle ? toggle.checked : true;
@@ -457,16 +476,9 @@
       const vatCents = Math.round(itemsSubtotal * IVA_RATE);
       const totalCents = itemsSubtotal + vatCents + deliveryCents;
 
-      const orderItems = Array.from(cart.values()).map(line => {
-        const texts = getItemTexts(line.id, line);
-        return {
-          item: texts.name,
-          description: texts.desc || texts.name,
-          qty: line.qty,
-          unitPrice: (line.priceCents / 100).toFixed(2),
-          totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
-        };
-      });
+      const orderItemsSummary = normalizedItems
+        .map(item => `${item.quantity} × ${item.name} — ${money(item.lineTotalCents)}`)
+        .join('\n');
 
       return {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
@@ -481,7 +493,8 @@
         vat: (vatCents / 100).toFixed(2),
         total: (totalCents / 100).toFixed(2),
         deliveryApplied: deliveryEnabled,
-        orderItems
+        orderItems: normalizedItems,
+        orderItemsSummary
       };
     }
 
