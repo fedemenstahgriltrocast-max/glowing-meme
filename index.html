@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marxia — Orden Rápida</title>
+  <title>Marxia — Orden Rápida (Worker Test)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -15,12 +15,12 @@
     html,body{margin:0;padding:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0e1324,#0b1720,#151a2e);color:var(--fg);min-height:100%}
     body{display:flex;align-items:center;justify-content:center}
     .wrap{width:100%;max-width:1200px;margin:auto;padding:2rem 1rem}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
     h1{margin:0;font-size:1.8rem}
     .controls{display:flex;gap:.5rem}
     .toggle{padding:.5rem 1rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;font-weight:700;cursor:pointer}
     .layout{display:grid;grid-template-columns:1fr .8fr;gap:var(--gap)}
-    @media (max-width:900px){.layout{grid-template-columns:1fr}}
+    @media (max-width:1100px){.layout{grid-template-columns:1fr}}
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad)}
     aside.card{display:flex;flex-direction:column}
     .title{font-size:1.2rem;font-weight:800;margin:0 0 1rem}
@@ -63,6 +63,11 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     [data-theme="light"] body{background:linear-gradient(135deg,#f3fbf7,#eaf2ff,#ffe9ef)}
     [data-theme="light"] .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important}
+
+    .mini-grid{display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;margin:0 0 1rem}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:.9rem}
+    pre{background:#0e1324;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;max-height:200px}
+    input[type="url"]{width:100%;padding:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px}
   </style>
 </head>
 <body>
@@ -74,6 +79,18 @@
         <button id="theme" class="toggle" aria-label="Light/Dark">🌙</button>
       </div>
     </header>
+
+    <!-- Diagnostics (Worker URL + health ping) -->
+    <section class="card" style="margin-bottom:1rem">
+      <h2 class="title">Diagnóstico del Worker</h2>
+      <div class="mini-grid">
+        <input id="worker-url" type="url" placeholder="https://YOUR-SUBDOMAIN.workers.dev" />
+        <button id="save-worker" class="btn">Guardar URL</button>
+        <button id="ping-worker" class="btn">Ping /health</button>
+      </div>
+      <div class="mono">Respuesta:</div>
+      <pre id="diag-out">—</pre>
+    </section>
 
     <div class="layout">
       <section class="card">
@@ -105,8 +122,8 @@
           <label>Business Email<input id="business-email" class="input-field" type="email" value="" required></label>
         </div>
 
-        <button id="accept" class="accept-btn">Send to Sheets</button>
-        <button id="invoice" class="invoice-btn">Send Full Invoice (PDF)</button>
+        <button id="accept" class="accept-btn">Send to Sheets (via Worker)</button>
+        <button id="invoice" class="invoice-btn">Send Full Invoice (PDF via Worker)</button>
       </aside>
     </div>
   </div>
@@ -115,10 +132,32 @@
   <div id="toast" class="toast">¡Pedido enviado con éxito!</div>
 
   <script>
+    // ---------------- CONFIG ----------------
+    // If served from GitHub Pages, set your Worker base URL here or paste it in the input.
+    // Example: 'https://your-subdomain.workers.dev'  (no trailing slash)
+    const DEFAULT_WORKER_BASE = ''; // leave '' for same-origin (if file is behind Worker)
+    // ---------------------------------------
+
     const IVA_RATE = 0.15;
     const LOCALE = { es: 'es-EC', en: 'en-US' };
     let currentLang = 'es';
 
+    // State for worker base
+    const StorageKey = 'workerBaseUrl';
+    function getWorkerBase() {
+      return localStorage.getItem(StorageKey) || DEFAULT_WORKER_BASE || '';
+    }
+    function setWorkerBase(v) {
+      if (v) localStorage.setItem(StorageKey, v);
+      else localStorage.removeItem(StorageKey);
+    }
+    function ep(path) {
+      const base = getWorkerBase();
+      if (!base) return path; // same-origin
+      return base.replace(/\/+$/,'') + path;
+    }
+
+    // Sample catalog
     const OPTIONS = [
       { id:'op1', name:{es:'Opción 1',en:'Option 1'}, desc:{es:'Tortilla + Huevos + Chorizo + Bebida', en:'Tortilla + Eggs + Sausage + Drink'}, priceCents:320 },
       { id:'op2', name:{es:'Opción 2',en:'Option 2'}, desc:{es:'Tortilla + Chorizo + Bebida', en:'Tortilla + Sausage + Drink'}, priceCents:270 },
@@ -138,6 +177,13 @@
     const t = v => typeof v === 'string' ? v : v[currentLang];
     const money = c => (c/100).toLocaleString(LOCALE[currentLang], { style:'currency', currency:'USD' });
 
+    function logDiag(obj) {
+      const pre = $('#diag-out');
+      try { pre.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2); }
+      catch { pre.textContent = String(obj); }
+    }
+
+    // Build UI
     function generateInvoiceNumber() {
       const now = new Date();
       const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
@@ -151,7 +197,7 @@
       const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
       if(isDark){
         const btn = document.querySelector(`button[data-act="add"][data-id="${item.id}"]`);
-        if(btn){ btn.classList.add('btn-adding'); setTimeout(()=>btn.classList.remove('btn-adding'), 2000); }
+        if(btn){ btn.classList.add('btn-adding'); setTimeout(()=>btn.classList.remove('btn-adding'), 800); }
       }
       render();
     }
@@ -216,6 +262,7 @@
           <div><strong>${money(line.priceCents*line.qty)}</strong></div>`;
         box.appendChild(el);
       });
+
       const deliveryInput = $('#delivery-fee');
       const delivery = parseFloat(deliveryInput.value) || 0;
       const deliveryCents = Math.round(delivery * 100);
@@ -226,7 +273,7 @@
       $('#total').textContent = money(total);
     }
 
-    deliveryFeeInput = $('#delivery-fee');
+    const deliveryFeeInput = $('#delivery-fee');
     if(deliveryFeeInput) deliveryFeeInput.addEventListener('input', render);
 
     $('#lang').addEventListener('click', ()=>{
@@ -247,43 +294,66 @@
       if(!btn) return;
       const id = btn.getAttribute('data-id');
       const act = btn.getAttribute('data-act');
-      let payload = { id, name: OPTIONS.find(x=>x.id===id)?.name?.[currentLang] || EXTRAS.find(x=>x.id===id)?.name?.[currentLang] || cart.get(id)?.name, priceCents: OPTIONS.find(x=>x.id===id)?.priceCents || EXTRAS.find(x=>x.id===id)?.priceCents || cart.get(id)?.priceCents };
-      const desc = btn.getAttribute('data-desc');
-      if(desc) payload.desc = desc;
-      const item = { ...payload };
+      const o = OPTIONS.find(x=>x.id===id);
+      const ex = EXTRAS.find(x=>x.id===id);
+      const c = cart.get(id);
+      const item = {
+        id,
+        name: (o?.name?.[currentLang]) || (ex?.name?.[currentLang]) || c?.name || '',
+        priceCents: (o?.priceCents) || (ex?.priceCents) || c?.priceCents || 0,
+        desc: btn.getAttribute('data-desc') || ''
+      };
       if(act==='add') add(item); else rem(item);
     });
 
-    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec'; // Replace with your direct Sheets GAS URL
-    const ENDPOINT_INVOICE = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec'; // Replace with your invoice GAS URL
-    const loader = $('#loader');
-    const toast  = $('#toast');
-    function showToast(msg, ms=1800){
-      toast.textContent = msg || '¡Pedido enviado con éxito!';
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), ms);
-    }
+    // ---------- Diagnostics controls ----------
+    (function setupDiagnostics(){
+      const input = $('#worker-url');
+      const saved = getWorkerBase();
+      if (saved) input.value = saved;
 
+      $('#save-worker').addEventListener('click', ()=>{
+        const v = input.value.trim();
+        setWorkerBase(v);
+        logDiag({ savedWorkerBase: getWorkerBase() || '(same-origin)' });
+      });
+
+      $('#ping-worker').addEventListener('click', async ()=>{
+        const url = ep('/health');
+        try {
+          const r = await fetch(url, { method: 'GET' });
+          const text = await r.text();
+          logDiag({ url, status: r.status, body: text });
+        } catch (err) {
+          logDiag({ url, error: String(err) });
+        }
+      });
+    })();
+
+    // ---------- Endpoints through Worker ----------
     async function collectData() {
       const inputs = ['customer-name', 'delivery-address', 'whatsapp', 'customer-email', 'business-email'];
-      for(let id of inputs) {
+      for(const id of inputs) {
         if(!$(`#${id}`).value) throw new Error('Please fill all fields');
       }
       if(cart.size === 0) throw new Error('Carrito vacío');
-      const subtotalCents = 0; // calculated in render, but recompute
+
       let itemsSubtotal = 0;
       cart.forEach(line => { itemsSubtotal += line.priceCents * line.qty; });
+
       const delivery = parseFloat($('#delivery-fee').value) || 0;
-      const deliveryFee = delivery.toFixed(2);
-      const vat = (itemsSubtotal * IVA_RATE / 100).toFixed(2);
-      const total = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(vat)).toFixed(2);
+      const deliveryCents = Math.round(delivery * 100);
+      const vatCents = Math.round(itemsSubtotal * IVA_RATE);
+      const totalCents = itemsSubtotal + vatCents + deliveryCents;
+
       const orderItems = Array.from(cart.values()).map(line => ({
         item: line.name,
         description: line.desc || line.name,
         qty: line.qty,
         totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
       }));
-      const data = {
+
+      return {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
         invoiceNumber: generateInvoiceNumber(),
         customerName: $('#customer-name').value,
@@ -292,42 +362,54 @@
         customerEmail: $('#customer-email').value,
         businessEmail: $('#business-email').value,
         subtotal: (itemsSubtotal / 100).toFixed(2),
-        deliveryFee,
-        vat,
-        total,
+        deliveryFee: (deliveryCents / 100).toFixed(2),
+        vat: (vatCents / 100).toFixed(2),
+        total: (totalCents / 100).toFixed(2),
         orderItems
       };
-      return data;
+    }
+
+    const loader = $('#loader');
+    const toast  = $('#toast');
+    function showToast(msg, ms=1800){
+      toast.textContent = msg || '¡Pedido enviado con éxito!';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), ms);
     }
 
     $('#accept').addEventListener('click', async ()=>{
       loader.style.display = 'flex';
+      const url = ep('/api/send-to-sheets');
       try {
         const data = await collectData();
-        const res = await fetch(ENDPOINT_SHEET, {
+        const res = await fetch(url, {
           method:'POST',
           body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain' },
+          headers: { 'Content-Type': 'text/plain' }, // Worker expects text/plain JSON -> forwards to GAS
           mode: 'cors'
         });
+        const out = await res.json();
         loader.style.display = 'none';
-        if(res.ok && (await res.text()).includes('Success')) {
-          showToast();
+        logDiag({ endpoint: url, response: out });
+        if(out && out.success){
+          showToast('¡Pedido enviado con éxito!');
           cart.clear(); render();
         } else {
-          throw new Error();
+          throw new Error(out && out.error || 'Error al enviar. Intenta de nuevo.');
         }
       } catch(err) {
         loader.style.display = 'none';
         showToast(err.message || 'Error al enviar. Intenta de nuevo.', 3000);
+        logDiag({ endpoint: url, error: String(err) });
       }
     });
 
     $('#invoice').addEventListener('click', async ()=>{
       loader.style.display = 'flex';
+      const url = ep('/api/send-invoice');
       try {
         const data = await collectData();
-        const res = await fetch(ENDPOINT_INVOICE, {
+        const res = await fetch(url, {
           method:'POST',
           body: JSON.stringify(data),
           headers: { 'Content-Type': 'text/plain' },
@@ -335,21 +417,24 @@
         });
         const resp = await res.json();
         loader.style.display = 'none';
-        if(resp.success) {
+        logDiag({ endpoint: url, response: resp });
+        if(resp && resp.success){
           const phone = data.whatsapp.replace(/\D/g, '');
-          const message = encodeURIComponent(`Invoice ${data.invoiceNumber} - Total: $${data.total}. PDF: ${resp.pdfUrl}`);
+          const message = encodeURIComponent(`Invoice ${data.invoiceNumber} - Total: $${data.total}${resp.pdfUrl ? '. PDF: ' + resp.pdfUrl : ''}`);
           window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
           showToast('¡Factura enviada con éxito!');
           cart.clear(); render();
         } else {
-          throw new Error();
+          throw new Error(resp && resp.error || 'Error al enviar factura. Intenta de nuevo.');
         }
       } catch(err) {
         loader.style.display = 'none';
         showToast(err.message || 'Error al enviar factura. Intenta de nuevo.', 3000);
+        logDiag({ endpoint: url, error: String(err) });
       }
     });
 
+    // Init
     (function init(){
       document.documentElement.setAttribute('data-theme','dark');
       buildOptions(); buildExtras(); render();
@@ -357,3 +442,4 @@
   </script>
 </body>
 </html>
+
