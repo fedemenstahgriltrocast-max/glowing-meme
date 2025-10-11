@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marxia — Orden Rápida (Worker Test)</title>
+  <title>Marxia — Orden Rápida</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -33,7 +33,8 @@
     .desc{color:var(--muted);font-size:.95rem}
     .actions{display:flex;gap:.5rem;margin-top:.6rem}
     .btn{padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--fg);font-weight:800;border-radius:10px;cursor:pointer;font-size:13px;white-space:nowrap;transition:background .15s ease,color .15s ease,border-color .15s ease}
-    .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important;border-color:#22c3a6 !important}
+    /* 4s flash on click for all buttons (includes .btn, .toggle, etc.) */
+    .flash{background:#22c3a6 !important;color:#0b0f18 !important;border-color:#22c3a6 !important}
     .ex-list{display:flex;flex-direction:column;gap:.75rem}
     .ex-row{display:grid;grid-template-columns:1fr auto;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
     .ex-left{display:flex;align-items:center;gap:1rem;font-weight:800}
@@ -47,27 +48,16 @@
     .input-field{width:100%;padding:0.5rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;margin-top:0.25rem}
     .customer-form{margin-top:1rem;display:grid;gap:0.5rem}
     .customer-form label{display:flex;flex-direction:column;font-size:0.9rem}
-    .send-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
-    .send-btn:active{transform:translateY(1px)}
-    .send-btn:hover{background:#1aa58a}
     .accept-btn{margin-top:1.2rem;padding:1rem 2rem;font-size:1.2rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 6px 18px rgba(0,0,0,.22);transition:transform .06s ease,background .2s ease}
     .accept-btn:active{transform:translateY(1px)}
-    .accept-btn:hover{background:#1aa58a}
     .invoice-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op1);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
     .invoice-btn:active{transform:translateY(1px)}
-    .invoice-btn:hover{background:#5a9aff}
     .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22c3a6;color:#0b0f18;padding:.75rem 1.1rem;border-radius:12px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:10000}
     .toast.show{opacity:1}
     .loader-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999}
     .loader{width:54px;height:54px;border:6px solid rgba(255,255,255,.25);border-top-color:#22c3a6;border-radius:50%;animation:spin .9s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     [data-theme="light"] body{background:linear-gradient(135deg,#f3fbf7,#eaf2ff,#ffe9ef)}
-    [data-theme="light"] .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important}
-
-    .mini-grid{display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;margin:0 0 1rem}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:.9rem}
-    pre{background:#0e1324;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;max-height:200px}
-    input[type="url"]{width:100%;padding:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px}
   </style>
 </head>
 <body>
@@ -79,18 +69,6 @@
         <button id="theme" class="toggle" aria-label="Light/Dark">Oscuro</button>
       </div>
     </header>
-
-    <!-- Diagnostics (Worker URL + health ping) -->
-    <section class="card" style="margin-bottom:1rem">
-      <h2 class="title">Diagnóstico del Worker</h2>
-      <div class="mini-grid">
-        <input id="worker-url" type="url" placeholder="https://soft-firefly-ac99.meeka-monsta-dooku.workers.dev" />
-        <button id="save-worker" class="btn">Guardar URL</button>
-        <button id="ping-worker" class="btn">Ping /health</button>
-      </div>
-      <div class="mono">Respuesta:</div>
-      <pre id="diag-out">—</pre>
-    </section>
 
     <div class="layout">
       <section class="card">
@@ -109,7 +87,19 @@
 
         <div class="totals" aria-live="polite" aria-atomic="true">
           <div class="row"><div>Subtotal</div><div id="subtotal">—</div></div>
-          <div class="row"><div>Delivery Fee</div><div><input id="delivery-fee" type="number" value="5.00" step="0.01" min="0" style="width:80px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;"> USD</div></div>
+
+          <!-- Optional delivery fee -->
+          <div class="row">
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <input id="delivery-apply" type="checkbox" />
+              <label for="delivery-apply" style="cursor:pointer">Delivery Fee</label>
+            </div>
+            <div>
+              <input id="delivery-fee" type="number" value="5.00" step="0.01" min="0"
+                     style="width:80px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;" disabled> USD
+            </div>
+          </div>
+
           <div class="row"><div>IVA (15%)</div><div id="vat">—</div></div>
           <div class="row"><div class="grand">TOTAL</div><div id="total" class="grand">—</div></div>
         </div>
@@ -132,42 +122,15 @@
   <div id="toast" class="toast">¡Pedido enviado con éxito!</div>
 
   <script>
-    // ---------------- CONFIG ----------------
-    // Hard-wired Worker base (your Workers.dev URL)
+    // ---- Worker base (hard-wired) ----
     const DEFAULT_WORKER_BASE = 'https://soft-firefly-ac99.meeka-monsta-dooku.workers.dev';
-    // ---------------------------------------
+    const ep = (p) => DEFAULT_WORKER_BASE.replace(/\/+$/,'') + p;
 
+    // ---- UI/Calc state ----
     const IVA_RATE = 0.15;
     const LOCALE = { es: 'es-EC', en: 'en-US' };
     let currentLang = 'es';
 
-    // State for worker base
-    const StorageKey = 'workerBaseUrl';
-    function getWorkerBase() {
-      return localStorage.getItem(StorageKey) || DEFAULT_WORKER_BASE || '';
-    }
-    function setWorkerBase(v) {
-      if (v) localStorage.setItem(StorageKey, v);
-      else localStorage.removeItem(StorageKey);
-    }
-    function ep(path) {
-      const base = getWorkerBase();
-      if (!base) return path; // same-origin
-      return base.replace(/\/+$/,'') + path;
-    }
-
-    function updateThemeButtonText(){
-      const btn = document.getElementById('theme');
-      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-      const next = (cur === 'dark') ? 'light' : 'dark';
-      const label = (currentLang === 'es')
-        ? (next === 'light' ? 'Claro' : 'Oscuro')
-        : (next === 'light' ? 'Light' : 'Dark');
-      btn.textContent = label;
-      btn.setAttribute('aria-label', label);
-    }
-
-    // Sample catalog
     const OPTIONS = [
       { id:'op1', name:{es:'Opción 1',en:'Option 1'}, desc:{es:'Tortilla + Huevos + Chorizo + Bebida', en:'Tortilla + Eggs + Sausage + Drink'}, priceCents:320 },
       { id:'op2', name:{es:'Opción 2',en:'Option 2'}, desc:{es:'Tortilla + Chorizo + Bebida', en:'Tortilla + Sausage + Drink'}, priceCents:270 },
@@ -187,13 +150,17 @@
     const t = v => typeof v === 'string' ? v : v[currentLang];
     const money = c => (c/100).toLocaleString(LOCALE[currentLang], { style:'currency', currency:'USD' });
 
-    function logDiag(obj) {
-      const pre = $('#diag-out');
-      try { pre.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2); }
-      catch { pre.textContent = String(obj); }
+    function updateThemeButtonText(){
+      const btn = $('#theme');
+      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = (cur === 'dark') ? 'light' : 'dark';
+      const label = (currentLang === 'es')
+        ? (next === 'light' ? 'Claro' : 'Oscuro')
+        : (next === 'light' ? 'Light' : 'Dark');
+      btn.textContent = label;
+      btn.setAttribute('aria-label', label);
     }
 
-    // Build UI
     function generateInvoiceNumber() {
       const now = new Date();
       const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
@@ -204,11 +171,6 @@
     function add(item){
       const line = cart.get(item.id) || { ...item, qty:0 };
       line.qty++; cart.set(item.id, line);
-      const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
-      if(isDark){
-        const btn = document.querySelector(`button[data-act="add"][data-id="${item.id}"]`);
-        if(btn){ btn.classList.add('btn-adding'); setTimeout(()=>btn.classList.remove('btn-adding'), 800); }
-      }
       render();
     }
     function rem(item){
@@ -273,18 +235,23 @@
         box.appendChild(el);
       });
 
-      const deliveryInput = $('#delivery-fee');
-      const delivery = parseFloat(deliveryInput.value) || 0;
+      const apply = $('#delivery-apply').checked;
+      $('#delivery-fee').disabled = !apply;
+
+      const delivery = apply ? (parseFloat($('#delivery-fee').value) || 0) : 0;
       const deliveryCents = Math.round(delivery * 100);
-      const vat = Math.round(subtotal * IVA_RATE);
+
+      const vat = Math.round(subtotal * IVA_RATE); // VAT only on items
       const total = subtotal + vat + deliveryCents;
+
       $('#subtotal').textContent = money(subtotal);
       $('#vat').textContent = money(vat);
       $('#total').textContent = money(total);
     }
 
-    const deliveryFeeInput = $('#delivery-fee');
-    if(deliveryFeeInput) deliveryFeeInput.addEventListener('input', render);
+    // live updates
+    $('#delivery-apply').addEventListener('change', render);
+    $('#delivery-fee').addEventListener('input', render);
 
     $('#lang').addEventListener('click', ()=>{
       currentLang = currentLang==='es' ? 'en' : 'es';
@@ -292,7 +259,6 @@
       buildOptions(); buildExtras(); render();
       updateThemeButtonText();
     });
-
     $('#theme').addEventListener('click', ()=>{
       const root = document.documentElement;
       const cur = root.getAttribute('data-theme') || 'dark';
@@ -301,32 +267,31 @@
       updateThemeButtonText();
     });
 
-    // ---------- Diagnostics controls ----------
-    (function setupDiagnostics(){
-      const input = $('#worker-url');
-      const saved = getWorkerBase();
-      input.value = saved || DEFAULT_WORKER_BASE;
-      if (!saved) setWorkerBase(DEFAULT_WORKER_BASE);
+    // Global button flash (4s)
+    document.body.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if(btn){
+        btn.classList.add('flash');
+        setTimeout(()=>btn.classList.remove('flash'), 4000);
+      }
+      const actBtn = e.target.closest('button[data-act]');
+      if(!actBtn) return;
+      const id = actBtn.getAttribute('data-id');
+      const act = actBtn.getAttribute('data-act');
+      const o = OPTIONS.find(x=>x.id===id);
+      const ex = EXTRAS.find(x=>x.id===id);
+      const c = cart.get(id);
 
-      $('#save-worker').addEventListener('click', ()=>{
-        const v = input.value.trim();
-        setWorkerBase(v);
-        logDiag({ savedWorkerBase: getWorkerBase() });
-      });
+      const item = {
+        id,
+        name: (o?.name?.[currentLang]) || (ex?.name?.[currentLang]) || c?.name || '',
+        priceCents: (o?.priceCents) || (ex?.priceCents) || c?.priceCents || 0,
+        desc: actBtn.getAttribute('data-desc') || ''
+      };
+      if(act==='add') add(item); else rem(item);
+    });
 
-      $('#ping-worker').addEventListener('click', async ()=>{
-        const url = ep('/health');
-        try {
-          const r = await fetch(url, { method: 'GET' });
-          const text = await r.text();
-          logDiag({ url, status: r.status, body: text });
-        } catch (err) {
-          logDiag({ url, error: String(err) });
-        }
-      });
-    })();
-
-    // ---------- Endpoints through Worker ----------
+    // ---------- Payload ----------
     async function collectData() {
       const inputs = ['customer-name', 'delivery-address', 'whatsapp', 'customer-email', 'business-email'];
       for(const id of inputs) {
@@ -337,7 +302,8 @@
       let itemsSubtotal = 0;
       cart.forEach(line => { itemsSubtotal += line.priceCents * line.qty; });
 
-      const delivery = parseFloat($('#delivery-fee').value) || 0;
+      const apply = $('#delivery-apply').checked;
+      const delivery = apply ? (parseFloat($('#delivery-fee').value) || 0) : 0;
       const deliveryCents = Math.round(delivery * 100);
       const vatCents = Math.round(itemsSubtotal * IVA_RATE);
       const totalCents = itemsSubtotal + vatCents + deliveryCents;
@@ -349,7 +315,7 @@
         totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
       }));
 
-      return {
+      const payload = {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
         invoiceNumber: generateInvoiceNumber(),
         customerName: $('#customer-name').value,
@@ -357,35 +323,39 @@
         whatsapp: $('#whatsapp').value,
         customerEmail: $('#customer-email').value,
         businessEmail: $('#business-email').value,
+
+        // new keys
         subtotal: (itemsSubtotal / 100).toFixed(2),
         deliveryFee: (deliveryCents / 100).toFixed(2),
         vat: (vatCents / 100).toFixed(2),
         total: (totalCents / 100).toFixed(2),
+
+        // legacy keys for compatibility with some Apps Script versions
+        orderSubtotal: (itemsSubtotal / 100).toFixed(2),
+        orderVat: (vatCents / 100).toFixed(2),
+        orderTotal: (totalCents / 100).toFixed(2),
+
         orderItems
       };
+      return payload;
     }
 
     const loader = $('#loader');
     const toast  = $('#toast');
-    function showToast(msg, ms=1800){
-      toast.textContent = msg || '¡Pedido enviado con éxito!';
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), ms);
-    }
+    const showToast = (msg, ms=1800)=>{ toast.textContent = msg || '¡Pedido enviado con éxito!'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), ms); };
 
+    // Send to Sheets (via Worker)
     $('#accept').addEventListener('click', async ()=>{
       loader.style.display = 'flex';
-      const url = ep('/api/send-to-sheets');
       try {
         const data = await collectData();
-        const res = await fetch(url, {
+        const res = await fetch(ep('/api/send-to-sheets'), {
           method:'POST',
           body: JSON.stringify(data),
           headers: { 'Content-Type': 'text/plain' }
         });
         const out = await res.json();
         loader.style.display = 'none';
-        logDiag({ endpoint: url, response: out });
         if(out && out.success){
           showToast('¡Pedido enviado con éxito!');
           cart.clear(); render();
@@ -395,23 +365,21 @@
       } catch(err) {
         loader.style.display = 'none';
         showToast(err.message || 'Error al enviar. Intenta de nuevo.', 3000);
-        logDiag({ endpoint: url, error: String(err) });
       }
     });
 
+    // Send invoice (via Worker)
     $('#invoice').addEventListener('click', async ()=>{
       loader.style.display = 'flex';
-      const url = ep('/api/send-invoice');
       try {
         const data = await collectData();
-        const res = await fetch(url, {
+        const res = await fetch(ep('/api/send-invoice'), {
           method:'POST',
           body: JSON.stringify(data),
           headers: { 'Content-Type': 'text/plain' }
         });
         const resp = await res.json();
         loader.style.display = 'none';
-        logDiag({ endpoint: url, response: resp });
         if(resp && resp.success){
           const phone = data.whatsapp.replace(/\D/g, '');
           const message = encodeURIComponent(`Invoice ${data.invoiceNumber} - Total: $${data.total}${resp.pdfUrl ? '. PDF: ' + resp.pdfUrl : ''}`);
@@ -424,7 +392,6 @@
       } catch(err) {
         loader.style.display = 'none';
         showToast(err.message || 'Error al enviar factura. Intenta de nuevo.', 3000);
-        logDiag({ endpoint: url, error: String(err) });
       }
     });
 
@@ -437,5 +404,3 @@
   </script>
 </body>
 </html>
-
-
