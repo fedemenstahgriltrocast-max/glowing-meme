@@ -76,7 +76,7 @@
       <h1>Orden Rápida</h1>
       <div class="controls">
         <button id="lang" class="toggle" aria-label="EN/ES">ES</button>
-        <button id="theme" class="toggle" aria-label="Light/Dark">🌙</button>
+        <button id="theme" class="toggle" aria-label="Light/Dark">Oscuro</button>
       </div>
     </header>
 
@@ -133,9 +133,8 @@
 
   <script>
     // ---------------- CONFIG ----------------
-    // If served from GitHub Pages, set your Worker base URL here or paste it in the input.
-    // Example: 'https://your-subdomain.workers.dev'  (no trailing slash)
-    const DEFAULT_WORKER_BASE = ''; // leave '' for same-origin (if file is behind Worker)
+    // Hard-wired Worker base (your Workers.dev URL)
+    const DEFAULT_WORKER_BASE = 'https://soft-firefly-ac99.meeka-monsta-dooku.workers.dev';
     // ---------------------------------------
 
     const IVA_RATE = 0.15;
@@ -155,6 +154,17 @@
       const base = getWorkerBase();
       if (!base) return path; // same-origin
       return base.replace(/\/+$/,'') + path;
+    }
+
+    function updateThemeButtonText(){
+      const btn = document.getElementById('theme');
+      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = (cur === 'dark') ? 'light' : 'dark';
+      const label = (currentLang === 'es')
+        ? (next === 'light' ? 'Claro' : 'Oscuro')
+        : (next === 'light' ? 'Light' : 'Dark');
+      btn.textContent = label;
+      btn.setAttribute('aria-label', label);
     }
 
     // Sample catalog
@@ -280,42 +290,28 @@
       currentLang = currentLang==='es' ? 'en' : 'es';
       $('#lang').textContent = currentLang.toUpperCase();
       buildOptions(); buildExtras(); render();
+      updateThemeButtonText();
     });
+
     $('#theme').addEventListener('click', ()=>{
       const root = document.documentElement;
       const cur = root.getAttribute('data-theme') || 'dark';
       const next = cur==='dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      $('#theme').textContent = next==='light' ? '🌞' : '🌙';
-    });
-
-    document.body.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button[data-act]');
-      if(!btn) return;
-      const id = btn.getAttribute('data-id');
-      const act = btn.getAttribute('data-act');
-      const o = OPTIONS.find(x=>x.id===id);
-      const ex = EXTRAS.find(x=>x.id===id);
-      const c = cart.get(id);
-      const item = {
-        id,
-        name: (o?.name?.[currentLang]) || (ex?.name?.[currentLang]) || c?.name || '',
-        priceCents: (o?.priceCents) || (ex?.priceCents) || c?.priceCents || 0,
-        desc: btn.getAttribute('data-desc') || ''
-      };
-      if(act==='add') add(item); else rem(item);
+      updateThemeButtonText();
     });
 
     // ---------- Diagnostics controls ----------
     (function setupDiagnostics(){
       const input = $('#worker-url');
       const saved = getWorkerBase();
-      if (saved) input.value = saved;
+      input.value = saved || DEFAULT_WORKER_BASE;
+      if (!saved) setWorkerBase(DEFAULT_WORKER_BASE);
 
       $('#save-worker').addEventListener('click', ()=>{
         const v = input.value.trim();
         setWorkerBase(v);
-        logDiag({ savedWorkerBase: getWorkerBase() || '(same-origin)' });
+        logDiag({ savedWorkerBase: getWorkerBase() });
       });
 
       $('#ping-worker').addEventListener('click', async ()=>{
@@ -385,8 +381,7 @@
         const res = await fetch(url, {
           method:'POST',
           body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain' }, // Worker expects text/plain JSON -> forwards to GAS
-          mode: 'cors'
+          headers: { 'Content-Type': 'text/plain' }
         });
         const out = await res.json();
         loader.style.display = 'none';
@@ -412,8 +407,7 @@
         const res = await fetch(url, {
           method:'POST',
           body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain' },
-          mode: 'cors'
+          headers: { 'Content-Type': 'text/plain' }
         });
         const resp = await res.json();
         loader.style.display = 'none';
@@ -437,9 +431,11 @@
     // Init
     (function init(){
       document.documentElement.setAttribute('data-theme','dark');
+      updateThemeButtonText();
       buildOptions(); buildExtras(); render();
     })();
   </script>
 </body>
 </html>
+
 
