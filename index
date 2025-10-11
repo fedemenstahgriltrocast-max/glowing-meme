@@ -15,12 +15,12 @@
     html,body{margin:0;padding:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0e1324,#0b1720,#151a2e);color:var(--fg);min-height:100%}
     body{display:flex;align-items:center;justify-content:center}
     .wrap{width:100%;max-width:1200px;margin:auto;padding:2rem 1rem}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
     h1{margin:0;font-size:1.8rem}
     .controls{display:flex;gap:.5rem}
     .toggle{padding:.5rem 1rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;font-weight:700;cursor:pointer}
     .layout{display:grid;grid-template-columns:1fr .8fr;gap:var(--gap)}
-    @media (max-width:900px){.layout{grid-template-columns:1fr}}
+    @media (max-width:1100px){.layout{grid-template-columns:1fr}}
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad)}
     aside.card{display:flex;flex-direction:column}
     .title{font-size:1.2rem;font-weight:800;margin:0 0 1rem}
@@ -32,8 +32,8 @@
     .op1{background:var(--op1)} .op2{background:var(--op2)} .op3{background:var(--op3)} .op4{background:var(--op4)}
     .desc{color:var(--muted);font-size:.95rem}
     .actions{display:flex;gap:.5rem;margin-top:.6rem}
-    .btn{padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--fg);font-weight:800;border-radius:10px;cursor:pointer;font-size:13px;white-space:nowrap;transition:background .15s ease,color .15s ease,border-color .15s ease}
-    .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important;border-color:#22c3a6 !important}
+    .btn{padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--fg);font-weight:800;border-radius:10px;cursor:pointer;font-size:13px;white-space:nowrap;transition:background .15s ease,color .15s ease,border-color .15s ease,box-shadow .15s ease}
+    .button-highlight{background:#22c3a6 !important;color:#0b0f18 !important;border-color:#22c3a6 !important;box-shadow:0 0 0 3px rgba(34,195,166,.35)}
     .ex-list{display:flex;flex-direction:column;gap:.75rem}
     .ex-row{display:grid;grid-template-columns:1fr auto;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
     .ex-left{display:flex;align-items:center;gap:1rem;font-weight:800}
@@ -63,6 +63,15 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     [data-theme="light"] body{background:linear-gradient(135deg,#f3fbf7,#eaf2ff,#ffe9ef)}
     [data-theme="light"] .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important}
+
+    .delivery-controls{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:flex-end}
+    .delivery-controls input[type="number"]{width:90px}
+    .delivery-controls .currency{opacity:.8;font-weight:600}
+    .delivery-toggle{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;color:var(--muted);cursor:pointer;user-select:none}
+    .delivery-toggle input{accent-color:#22c3a6;width:18px;height:18px}
+    .delivery-controls input[disabled]{opacity:.45;cursor:not-allowed}
+    .delivery-amount{font-weight:700}
+    .empty-cart{color:var(--muted);text-align:center;padding:1.5rem 0;font-weight:600}
   </style>
 </head>
 <body>
@@ -71,7 +80,7 @@
       <h1>Orden Rápida</h1>
       <div class="controls">
         <button id="lang" class="toggle" aria-label="EN/ES">ES</button>
-        <button id="theme" class="toggle" aria-label="Light/Dark">🌙</button>
+        <button id="theme" class="toggle" aria-label="Light/Dark">Oscuro</button>
       </div>
     </header>
 
@@ -92,7 +101,18 @@
 
         <div class="totals" aria-live="polite" aria-atomic="true">
           <div class="row"><div>Subtotal</div><div id="subtotal">—</div></div>
-          <div class="row"><div>Delivery Fee</div><div><input id="delivery-fee" type="number" value="5.00" step="0.01" min="0" style="width:80px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;"> USD</div></div>
+          <div class="row delivery-row">
+            <div>Delivery Fee</div>
+            <div class="delivery-controls">
+              <label class="delivery-toggle">
+                <input id="delivery-enabled" type="checkbox" checked>
+                <span id="delivery-toggle-label">Aplicar</span>
+              </label>
+              <input id="delivery-fee" type="number" value="5.00" step="0.01" min="0" style="border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;">
+              <span class="currency">USD</span>
+              <span id="delivery-amount" class="delivery-amount"></span>
+            </div>
+          </div>
           <div class="row"><div>IVA (15%)</div><div id="vat">—</div></div>
           <div class="row"><div class="grand">TOTAL</div><div id="total" class="grand">—</div></div>
         </div>
@@ -105,8 +125,8 @@
           <label>Business Email<input id="business-email" class="input-field" type="email" value="" required></label>
         </div>
 
-        <button id="accept" class="accept-btn">Send to Sheets</button>
-        <button id="invoice" class="invoice-btn">Send Full Invoice (PDF)</button>
+        <button id="accept" class="accept-btn">Send to Sheets (via Worker)</button>
+        <button id="invoice" class="invoice-btn">Send Full Invoice (PDF via Worker)</button>
       </aside>
     </div>
   </div>
@@ -119,6 +139,59 @@
     const LOCALE = { es: 'es-EC', en: 'en-US' };
     let currentLang = 'es';
 
+    const WORKER_BASE = 'https://soft-firefly-ac99.meeka-monsta-dooku.workers.dev';
+    const ENDPOINTS = {
+      sheets: `${WORKER_BASE}/api/send-to-sheets`,
+      invoice: `${WORKER_BASE}/api/send-invoice`
+    };
+
+    const TRANSLATIONS = {
+      es: {
+        deliveryApply: 'Aplicar',
+        deliveryApplied: 'Aplicado',
+        deliveryOptional: 'Opcional',
+        emptyCart: 'Carrito vacío',
+        add: '+ Agregar',
+        remove: '− Quitar',
+        addShort: '+',
+        removeShort: '−',
+        fillFields: 'Por favor completa todos los campos',
+        cartEmptyError: 'Carrito vacío',
+        orderSuccess: '¡Pedido enviado con éxito!',
+        invoiceSuccess: '¡Factura enviada con éxito!',
+        orderError: 'Error al enviar. Intenta de nuevo.',
+        invoiceError: 'Error al enviar factura. Intenta de nuevo.'
+      },
+      en: {
+        deliveryApply: 'Apply',
+        deliveryApplied: 'Applied',
+        deliveryOptional: 'Optional',
+        emptyCart: 'Cart is empty',
+        add: '+ Add',
+        remove: '− Remove',
+        addShort: '+',
+        removeShort: '−',
+        fillFields: 'Please fill out all fields',
+        cartEmptyError: 'Cart is empty',
+        orderSuccess: 'Order sent successfully!',
+        invoiceSuccess: 'Invoice sent successfully!',
+        orderError: 'Unable to send order. Try again.',
+        invoiceError: 'Unable to send invoice. Try again.'
+      }
+    };
+
+    function updateThemeButtonText(){
+      const btn = document.getElementById('theme');
+      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = (cur === 'dark') ? 'light' : 'dark';
+      const label = (currentLang === 'es')
+        ? (next === 'light' ? 'Claro' : 'Oscuro')
+        : (next === 'light' ? 'Light' : 'Dark');
+      btn.textContent = label;
+      btn.setAttribute('aria-label', label);
+    }
+
+    // Sample catalog
     const OPTIONS = [
       { id:'op1', name:{es:'Opción 1',en:'Option 1'}, desc:{es:'Tortilla + Huevos + Chorizo + Bebida', en:'Tortilla + Eggs + Sausage + Drink'}, priceCents:320 },
       { id:'op2', name:{es:'Opción 2',en:'Option 2'}, desc:{es:'Tortilla + Chorizo + Bebida', en:'Tortilla + Sausage + Drink'}, priceCents:270 },
@@ -138,6 +211,72 @@
     const t = v => typeof v === 'string' ? v : v[currentLang];
     const money = c => (c/100).toLocaleString(LOCALE[currentLang], { style:'currency', currency:'USD' });
 
+    const deliveryToggle = () => $('#delivery-enabled');
+    const deliveryFeeInput = () => $('#delivery-fee');
+    const deliveryAmountEl = () => $('#delivery-amount');
+    const deliveryToggleLabel = () => $('#delivery-toggle-label');
+
+    function highlightButton(btn){
+      if(!btn) return;
+      btn.classList.add('button-highlight');
+      clearTimeout(btn._highlightTimeout);
+      btn._highlightTimeout = setTimeout(()=>{
+        btn.classList.remove('button-highlight');
+        btn._highlightTimeout = null;
+      }, 4000);
+    }
+
+    function getCopy(){
+      return TRANSLATIONS[currentLang];
+    }
+
+    function getDeliveryCents(){
+      const toggle = deliveryToggle();
+      const input = deliveryFeeInput();
+      if(!toggle || !input || !toggle.checked) return 0;
+      const value = parseFloat(input.value);
+      if(Number.isFinite(value) && value >= 0) return Math.round(value * 100);
+      return 0;
+    }
+
+    function updateDeliveryUI(subtotalCents){
+      const toggle = deliveryToggle();
+      const input = deliveryFeeInput();
+      const amount = deliveryAmountEl();
+      const label = deliveryToggleLabel();
+      if(!toggle || !input) return;
+      const copy = getCopy();
+      const enabled = toggle.checked;
+      input.disabled = !enabled;
+      if(label) label.textContent = enabled ? copy.deliveryApplied : copy.deliveryApply;
+      const deliveryCents = getDeliveryCents();
+      if(amount){
+        amount.textContent = enabled ? money(deliveryCents) : copy.deliveryOptional;
+      }
+      if(!enabled && input.value){
+        input.dataset.cachedValue = input.value;
+      }
+      if(enabled && input.dataset.cachedValue && !input.value){
+        input.value = input.dataset.cachedValue;
+      }
+      if(enabled && subtotalCents === 0 && !input.value){
+        input.value = '0.00';
+      }
+    }
+
+    function getCatalogItem(id){
+      return OPTIONS.find(x=>x.id===id) || EXTRAS.find(x=>x.id===id);
+    }
+
+    function getItemTexts(id, fallback){
+      const item = getCatalogItem(id) || fallback;
+      if(!item) return { name: id, desc: null };
+      const name = item.name ? t(item.name) : (fallback?.name || id);
+      const desc = item.desc ? t(item.desc) : (fallback?.desc || null);
+      return { name, desc };
+    }
+
+    // Build UI
     function generateInvoiceNumber() {
       const now = new Date();
       const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
@@ -146,13 +285,14 @@
     }
 
     function add(item){
-      const line = cart.get(item.id) || { ...item, qty:0 };
-      line.qty++; cart.set(item.id, line);
-      const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
-      if(isDark){
-        const btn = document.querySelector(`button[data-act="add"][data-id="${item.id}"]`);
-        if(btn){ btn.classList.add('btn-adding'); setTimeout(()=>btn.classList.remove('btn-adding'), 2000); }
-      }
+      const base = cart.get(item.id) || { ...item, qty:0 };
+      const { name, desc } = getItemTexts(item.id, base);
+      base.name = name;
+      base.desc = desc;
+      base.priceCents = item.priceCents ?? base.priceCents;
+      base.qty++;
+      cart.set(item.id, base);
+      highlightButton(document.querySelector(`button[data-act="add"][data-id="${item.id}"]`));
       render();
     }
     function rem(item){
@@ -164,8 +304,8 @@
 
     function buildOptions(){
       const host = $('#opts'); host.innerHTML='';
+      const copy = getCopy();
       OPTIONS.forEach((o,i)=>{
-        const descEsc = t(o.desc).replace(/"/g, '&quot;');
         const el = document.createElement('div');
         el.className='opt';
         el.innerHTML = `
@@ -174,8 +314,8 @@
             <div>
               <div class="desc">${t(o.desc)} — <strong>${money(o.priceCents)}</strong></div>
               <div class="actions">
-                <button class="btn" data-act="rem" data-id="${o.id}">− Quitar</button>
-                <button class="btn" data-act="add" data-id="${o.id}" data-desc="${descEsc}">+ Agregar</button>
+                <button class="btn" data-act="rem" data-id="${o.id}">${copy.remove}</button>
+                <button class="btn" data-act="add" data-id="${o.id}">${copy.add}</button>
               </div>
             </div>
           </div>`;
@@ -184,62 +324,97 @@
     }
     function buildExtras(){
       const host = $('#extras'); host.innerHTML='';
+      const copy = getCopy();
       EXTRAS.forEach(e=>{
-        const nameEsc = t(e.name).replace(/"/g, '&quot;');
         const row = document.createElement('div');
         row.className='ex-row';
         row.innerHTML = `
           <div class="ex-left">${t(e.name)} <span class="ex-price">${money(e.priceCents)}</span></div>
           <div class="actions">
-            <button class="btn" data-act="rem" data-id="${e.id}">−</button>
-            <button class="btn" data-act="add" data-id="${e.id}" data-desc="${nameEsc}">+ Agregar</button>
+            <button class="btn" data-act="rem" data-id="${e.id}">${copy.removeShort}</button>
+            <button class="btn" data-act="add" data-id="${e.id}">${copy.add}</button>
           </div>`;
         host.appendChild(row);
       });
     }
 
     function render(){
-      const box = $('#cart'); box.innerHTML='';
+      const box = $('#cart');
+      const copy = getCopy();
+      box.innerHTML='';
       let subtotal = 0;
       cart.forEach(line=>{
         subtotal += line.priceCents * line.qty;
+        const texts = getItemTexts(line.id, line);
+        line.name = texts.name;
+        line.desc = texts.desc;
         const el = document.createElement('div');
         el.className='line';
-        const displayName = line.desc ? `${line.name} (${line.desc})` : line.name;
+        const displayName = texts.desc && texts.desc !== texts.name ? `${texts.name} (${texts.desc})` : texts.name;
         el.innerHTML = `
           <div>${displayName}</div>
           <div class="qtybox">
-            <button class="btn" data-act="rem" data-id="${line.id}">−</button>
+            <button class="btn" data-act="rem" data-id="${line.id}">${copy.removeShort}</button>
             <span>${line.qty}</span>
-            <button class="btn" data-act="add" data-id="${line.id}">+</button>
+            <button class="btn" data-act="add" data-id="${line.id}">${copy.addShort}</button>
           </div>
           <div><strong>${money(line.priceCents*line.qty)}</strong></div>`;
         box.appendChild(el);
       });
-      const deliveryInput = $('#delivery-fee');
-      const delivery = parseFloat(deliveryInput.value) || 0;
-      const deliveryCents = Math.round(delivery * 100);
+
+      if(cart.size === 0){
+        box.innerHTML = `<div class="empty-cart">${copy.emptyCart}</div>`;
+      }
+
+      const deliveryCents = getDeliveryCents();
       const vat = Math.round(subtotal * IVA_RATE);
       const total = subtotal + vat + deliveryCents;
       $('#subtotal').textContent = money(subtotal);
       $('#vat').textContent = money(vat);
       $('#total').textContent = money(total);
+      updateDeliveryUI(subtotal);
     }
 
-    deliveryFeeInput = $('#delivery-fee');
-    if(deliveryFeeInput) deliveryFeeInput.addEventListener('input', render);
+    const deliveryToggleEl = deliveryToggle();
+    if(deliveryToggleEl){
+      deliveryToggleEl.addEventListener('change', ()=>{
+        render();
+      });
+    }
+
+    const deliveryInputEl = deliveryFeeInput();
+    if(deliveryInputEl){
+      deliveryInputEl.addEventListener('input', ()=>{
+        const value = parseFloat(deliveryInputEl.value);
+        if(Number.isFinite(value) && value < 0){
+          deliveryInputEl.value = '0';
+        }
+        render();
+      });
+      deliveryInputEl.addEventListener('blur', ()=>{
+        const value = parseFloat(deliveryInputEl.value);
+        if(Number.isFinite(value)){
+          deliveryInputEl.value = Math.max(0, value).toFixed(2);
+        } else {
+          deliveryInputEl.value = '';
+        }
+        render();
+      });
+    }
 
     $('#lang').addEventListener('click', ()=>{
       currentLang = currentLang==='es' ? 'en' : 'es';
       $('#lang').textContent = currentLang.toUpperCase();
       buildOptions(); buildExtras(); render();
+      updateThemeButtonText();
     });
+
     $('#theme').addEventListener('click', ()=>{
       const root = document.documentElement;
       const cur = root.getAttribute('data-theme') || 'dark';
       const next = cur==='dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      $('#theme').textContent = next==='light' ? '🌞' : '🌙';
+      updateThemeButtonText();
     });
 
     document.body.addEventListener('click', (e)=>{
@@ -247,43 +422,53 @@
       if(!btn) return;
       const id = btn.getAttribute('data-id');
       const act = btn.getAttribute('data-act');
-      let payload = { id, name: OPTIONS.find(x=>x.id===id)?.name?.[currentLang] || EXTRAS.find(x=>x.id===id)?.name?.[currentLang] || cart.get(id)?.name, priceCents: OPTIONS.find(x=>x.id===id)?.priceCents || EXTRAS.find(x=>x.id===id)?.priceCents || cart.get(id)?.priceCents };
-      const desc = btn.getAttribute('data-desc');
-      if(desc) payload.desc = desc;
-      const item = { ...payload };
-      if(act==='add') add(item); else rem(item);
+      if(!id || !act) return;
+      const catalog = getCatalogItem(id) || cart.get(id);
+      if(!catalog) return;
+      const { name, desc } = getItemTexts(id, catalog);
+      const payload = {
+        id,
+        name,
+        desc,
+        priceCents: catalog.priceCents
+      };
+      if(act==='add') add(payload); else rem(payload);
     });
 
-    const ENDPOINT_SHEET = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec'; // Replace with your direct Sheets GAS URL
-    const ENDPOINT_INVOICE = 'https://script.google.com/macros/s/AKfycbz6HcmSldvb55qSFf5Y0Uz3zI8cxxxnToMvj-MdqRw8ojpLoiGv9HG6Dws5kE1c_kwB/exec'; // Replace with your invoice GAS URL
-    const loader = $('#loader');
-    const toast  = $('#toast');
-    function showToast(msg, ms=1800){
-      toast.textContent = msg || '¡Pedido enviado con éxito!';
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), ms);
-    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if(btn) highlightButton(btn);
+    });
 
     async function collectData() {
+      const copy = getCopy();
       const inputs = ['customer-name', 'delivery-address', 'whatsapp', 'customer-email', 'business-email'];
-      for(let id of inputs) {
-        if(!$(`#${id}`).value) throw new Error('Please fill all fields');
+      for(const id of inputs) {
+        if(!$(`#${id}`).value) throw new Error(copy.fillFields);
       }
-      if(cart.size === 0) throw new Error('Carrito vacío');
-      const subtotalCents = 0; // calculated in render, but recompute
+      if(cart.size === 0) throw new Error(copy.cartEmptyError);
+
       let itemsSubtotal = 0;
       cart.forEach(line => { itemsSubtotal += line.priceCents * line.qty; });
-      const delivery = parseFloat($('#delivery-fee').value) || 0;
-      const deliveryFee = delivery.toFixed(2);
-      const vat = (itemsSubtotal * IVA_RATE / 100).toFixed(2);
-      const total = (itemsSubtotal / 100 + parseFloat(deliveryFee) + parseFloat(vat)).toFixed(2);
-      const orderItems = Array.from(cart.values()).map(line => ({
-        item: line.name,
-        description: line.desc || line.name,
-        qty: line.qty,
-        totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
-      }));
-      const data = {
+
+      const toggle = deliveryToggle();
+      const deliveryEnabled = toggle ? toggle.checked : true;
+      const deliveryCents = deliveryEnabled ? getDeliveryCents() : 0;
+      const vatCents = Math.round(itemsSubtotal * IVA_RATE);
+      const totalCents = itemsSubtotal + vatCents + deliveryCents;
+
+      const orderItems = Array.from(cart.values()).map(line => {
+        const texts = getItemTexts(line.id, line);
+        return {
+          item: texts.name,
+          description: texts.desc || texts.name,
+          qty: line.qty,
+          unitPrice: (line.priceCents / 100).toFixed(2),
+          totalPerItem: (line.priceCents * line.qty / 100).toFixed(2)
+        };
+      });
+
+      return {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
         invoiceNumber: generateInvoiceNumber(),
         customerName: $('#customer-name').value,
@@ -292,68 +477,91 @@
         customerEmail: $('#customer-email').value,
         businessEmail: $('#business-email').value,
         subtotal: (itemsSubtotal / 100).toFixed(2),
-        deliveryFee,
-        vat,
-        total,
+        deliveryFee: (deliveryCents / 100).toFixed(2),
+        vat: (vatCents / 100).toFixed(2),
+        total: (totalCents / 100).toFixed(2),
+        deliveryApplied: deliveryEnabled,
         orderItems
       };
-      return data;
+    }
+
+    const loader = $('#loader');
+    const toast  = $('#toast');
+    function showToast(msg, ms=1800){
+      const copy = getCopy();
+      toast.textContent = msg || copy.orderSuccess;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), ms);
     }
 
     $('#accept').addEventListener('click', async ()=>{
+      const copy = getCopy();
       loader.style.display = 'flex';
       try {
         const data = await collectData();
-        const res = await fetch(ENDPOINT_SHEET, {
+        const res = await fetch(ENDPOINTS.sheets, {
           method:'POST',
           body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain' },
-          mode: 'cors'
+          headers: { 'Content-Type': 'application/json' }
         });
+        const out = await res.json().catch(()=>null);
         loader.style.display = 'none';
-        if(res.ok && (await res.text()).includes('Success')) {
-          showToast();
+        if(res.ok && out && out.success){
+          showToast(copy.orderSuccess);
           cart.clear(); render();
         } else {
-          throw new Error();
+          const message = (out && (out.error || out.message)) || copy.orderError;
+          throw new Error(message);
         }
       } catch(err) {
         loader.style.display = 'none';
-        showToast(err.message || 'Error al enviar. Intenta de nuevo.', 3000);
+        showToast(err.message || copy.orderError, 3000);
       }
     });
 
     $('#invoice').addEventListener('click', async ()=>{
+      const copy = getCopy();
       loader.style.display = 'flex';
       try {
         const data = await collectData();
-        const res = await fetch(ENDPOINT_INVOICE, {
+        const res = await fetch(ENDPOINTS.invoice, {
           method:'POST',
           body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain' },
-          mode: 'cors'
+          headers: { 'Content-Type': 'application/json' }
         });
-        const resp = await res.json();
+        const resp = await res.json().catch(()=>null);
         loader.style.display = 'none';
-        if(resp.success) {
+        if(res.ok && resp && resp.success){
           const phone = data.whatsapp.replace(/\D/g, '');
-          const message = encodeURIComponent(`Invoice ${data.invoiceNumber} - Total: $${data.total}. PDF: ${resp.pdfUrl}`);
+          const pieces = [
+            `Invoice ${data.invoiceNumber}`,
+            `Total: $${data.total}`
+          ];
+          if(resp.pdfUrl){
+            pieces.push(`PDF: ${resp.pdfUrl}`);
+          }
+          const message = encodeURIComponent(pieces.join('. '));
           window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-          showToast('¡Factura enviada con éxito!');
+          showToast(copy.invoiceSuccess);
           cart.clear(); render();
         } else {
-          throw new Error();
+          const message = (resp && (resp.error || resp.message)) || copy.invoiceError;
+          throw new Error(message);
         }
       } catch(err) {
         loader.style.display = 'none';
-        showToast(err.message || 'Error al enviar factura. Intenta de nuevo.', 3000);
+        showToast(err.message || copy.invoiceError, 3000);
       }
     });
 
+    // Init
     (function init(){
       document.documentElement.setAttribute('data-theme','dark');
+      updateThemeButtonText();
       buildOptions(); buildExtras(); render();
     })();
   </script>
 </body>
 </html>
+
+
