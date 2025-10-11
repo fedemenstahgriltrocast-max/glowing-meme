@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marxia — Orden Rápida (Worker Test)</title>
+  <title>Marxia — Orden Rápida</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -47,15 +47,10 @@
     .input-field{width:100%;padding:0.5rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;margin-top:0.25rem}
     .customer-form{margin-top:1rem;display:grid;gap:0.5rem}
     .customer-form label{display:flex;flex-direction:column;font-size:0.9rem}
-    .send-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
-    .send-btn:active{transform:translateY(1px)}
-    .send-btn:hover{background:#1aa58a}
     .accept-btn{margin-top:1.2rem;padding:1rem 2rem;font-size:1.2rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 6px 18px rgba(0,0,0,.22);transition:transform .06s ease,background .2s ease}
     .accept-btn:active{transform:translateY(1px)}
-    .accept-btn:hover{background:#1aa58a}
     .invoice-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op1);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
     .invoice-btn:active{transform:translateY(1px)}
-    .invoice-btn:hover{background:#5a9aff}
     .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22c3a6;color:#0b0f18;padding:.75rem 1.1rem;border-radius:12px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:10000}
     .toast.show{opacity:1}
     .loader-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999}
@@ -63,7 +58,6 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     [data-theme="light"] body{background:linear-gradient(135deg,#f3fbf7,#eaf2ff,#ffe9ef)}
     [data-theme="light"] .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important}
-
     .delivery-controls{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:flex-end}
     .delivery-controls input[type="number"]{width:90px}
     .delivery-controls .currency{opacity:.8;font-weight:600}
@@ -98,7 +92,6 @@
       <aside class="card">
         <h2 class="title">Resumen</h2>
         <div id="cart" class="cart" aria-live="polite" aria-atomic="true"></div>
-
         <div class="totals" aria-live="polite" aria-atomic="true">
           <div class="row"><div>Subtotal</div><div id="subtotal">—</div></div>
           <div class="row delivery-row">
@@ -138,7 +131,6 @@
     const IVA_RATE = 0.15;
     const LOCALE = { es: 'es-EC', en: 'en-US' };
     let currentLang = 'es';
-
     const WORKER_BASE = 'https://soft-firefly-ac99.meeka-monsta-dooku.workers.dev';
     const ENDPOINTS = {
       sheets: `${WORKER_BASE}/api/send-to-sheets`,
@@ -210,7 +202,6 @@
     const $ = s => document.querySelector(s);
     const t = v => typeof v === 'string' ? v : v[currentLang];
     const money = c => (c/100).toLocaleString(LOCALE[currentLang], { style:'currency', currency:'USD' });
-
     const deliveryToggle = () => $('#delivery-enabled');
     const deliveryFeeInput = () => $('#delivery-fee');
     const deliveryAmountEl = () => $('#delivery-amount');
@@ -276,7 +267,6 @@
       return { name, desc };
     }
 
-    // Build UI
     function generateInvoiceNumber() {
       const now = new Date();
       const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
@@ -369,6 +359,7 @@
       const deliveryCents = getDeliveryCents();
       const vat = Math.round(subtotal * IVA_RATE);
       const total = subtotal + vat + deliveryCents;
+
       $('#subtotal').textContent = money(subtotal);
       $('#vat').textContent = money(vat);
       $('#total').textContent = money(total);
@@ -408,7 +399,6 @@
       buildOptions(); buildExtras(); render();
       updateThemeButtonText();
     });
-
     $('#theme').addEventListener('click', ()=>{
       const root = document.documentElement;
       const cur = root.getAttribute('data-theme') || 'dark';
@@ -446,8 +436,8 @@
       for(const id of inputs) {
         if(!$(`#${id}`).value) throw new Error(copy.fillFields);
       }
-      if(cart.size === 0) throw new Error(copy.cartEmptyError);
 
+      if(cart.size === 0) throw new Error(copy.cartEmptyError);
       const normalizedItems = Array.from(cart.values()).map(rawLine => {
         const fallback = getCatalogItem(rawLine.id) || rawLine;
         const texts = getItemTexts(rawLine.id, fallback);
@@ -469,18 +459,16 @@
       }).filter(item => item.quantity > 0);
 
       const itemsSubtotal = normalizedItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
-
       const toggle = deliveryToggle();
       const deliveryEnabled = toggle ? toggle.checked : true;
       const deliveryCents = deliveryEnabled ? getDeliveryCents() : 0;
       const vatCents = Math.round(itemsSubtotal * IVA_RATE);
       const totalCents = itemsSubtotal + vatCents + deliveryCents;
-
       const orderItemsSummary = normalizedItems
         .map(item => `${item.quantity} × ${item.name} — ${money(item.lineTotalCents)}`)
         .join('\n');
 
-      return {
+      const payload = {
         date: new Date().toLocaleDateString(LOCALE[currentLang]),
         invoiceNumber: generateInvoiceNumber(),
         customerName: $('#customer-name').value,
@@ -488,6 +476,8 @@
         whatsapp: $('#whatsapp').value,
         customerEmail: $('#customer-email').value,
         businessEmail: $('#business-email').value,
+
+        // new keys
         subtotal: (itemsSubtotal / 100).toFixed(2),
         deliveryFee: (deliveryCents / 100).toFixed(2),
         vat: (vatCents / 100).toFixed(2),
@@ -496,6 +486,7 @@
         orderItems: normalizedItems,
         orderItemsSummary
       };
+      return payload;
     }
 
     const loader = $('#loader');
@@ -507,6 +498,7 @@
       setTimeout(()=>toast.classList.remove('show'), ms);
     }
 
+    // Send to Sheets (via Worker)
     $('#accept').addEventListener('click', async ()=>{
       const copy = getCopy();
       loader.style.display = 'flex';
@@ -532,6 +524,7 @@
       }
     });
 
+    // Send invoice (via Worker)
     $('#invoice').addEventListener('click', async ()=>{
       const copy = getCopy();
       loader.style.display = 'flex';
@@ -576,5 +569,3 @@
   </script>
 </body>
 </html>
-
-
