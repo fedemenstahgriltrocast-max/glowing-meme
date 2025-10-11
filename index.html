@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marxia — Orden Rápida</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --fg:#e8eef6; --card:#161a2b; --line:#2b2f40; --muted:#a9b3c3;
+      --op1:#7aa8ff; --op2:#22c3a6; --op3:#ff8ab3; --op4:#c466ff; --ex:#c3b5ff;
+      --radius:14px; --gap:1rem; --pad:1rem;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0e1324,#0b1720,#151a2e);color:var(--fg);min-height:100%}
+    body{display:flex;align-items:center;justify-content:center}
+    .wrap{width:100%;max-width:1200px;margin:auto;padding:2rem 1rem}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+    h1{margin:0;font-size:1.8rem}
+    .controls{display:flex;gap:.5rem}
+    .toggle{padding:.5rem 1rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;font-weight:700;cursor:pointer}
+    .layout{display:grid;grid-template-columns:1fr .8fr;gap:var(--gap)}
+    @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad)}
+    aside.card{display:flex;flex-direction:column}
+    .title{font-size:1.2rem;font-weight:800;margin:0 0 1rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:var(--gap)}
+    .opt{background:rgba(255,255,255,.02);border:2px solid var(--line);border-radius:var(--radius);padding:1rem;transition:transform .15s ease,background .15s ease}
+    .opt:hover{background:rgba(255,255,255,.05);transform:scale(1.02)}
+    .top{display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem}
+    .btn50{width:44px;height:35px;border:none;border-radius:8px;font-weight:900;color:#111}
+    .op1{background:var(--op1)} .op2{background:var(--op2)} .op3{background:var(--op3)} .op4{background:var(--op4)}
+    .desc{color:var(--muted);font-size:.95rem}
+    .actions{display:flex;gap:.5rem;margin-top:.6rem}
+    .btn{padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--fg);font-weight:800;border-radius:10px;cursor:pointer;font-size:13px;white-space:nowrap;transition:background .15s ease,color .15s ease,border-color .15s ease,box-shadow .15s ease}
+    .button-highlight{background:#22c3a6 !important;color:#0b0f18 !important;border-color:#22c3a6 !important;box-shadow:0 0 0 3px rgba(34,195,166,.35)}
+    .ex-list{display:flex;flex-direction:column;gap:.75rem}
+    .ex-row{display:grid;grid-template-columns:1fr auto;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
+    .ex-left{display:flex;align-items:center;gap:1rem;font-weight:800}
+    .ex-price{font-size:.9rem;padding:.35rem .7rem;border-radius:8px;border:1px dashed var(--line);background:rgba(255,255,255,.05);font-weight:800}
+    .cart{border:1px dashed var(--line);border-radius:var(--radius);padding:1rem;max-height:320px;overflow:auto}
+    .line{display:grid;grid-template-columns:1fr auto auto;gap:.6rem;align-items:center;padding:.6rem 0;border-bottom:1px dotted rgba(255,255,255,.06)}
+    .qtybox{display:flex;align-items:center;gap:.5rem}
+    .totals{margin-top:1rem;display:grid;gap:.5rem}
+    .totals .row{display:flex;justify-content:space-between;align-items:center}
+    .grand{font-size:1.6rem;font-weight:900}
+    .input-field{width:100%;padding:0.5rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;margin-top:0.25rem}
+    .customer-form{margin-top:1rem;display:grid;gap:0.5rem}
+    .customer-form label{display:flex;flex-direction:column;font-size:0.9rem}
+    .accept-btn{margin-top:1.2rem;padding:1rem 2rem;font-size:1.2rem;background:var(--op2);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 6px 18px rgba(0,0,0,.22);transition:transform .06s ease,background .2s ease}
+    .accept-btn:active{transform:translateY(1px)}
+    .invoice-btn{margin-top:0.5rem;padding:0.75rem 1.5rem;font-size:1rem;background:var(--op1);color:#0b0f18;border:none;border-radius:12px;cursor:pointer;align-self:flex-end;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:transform .06s ease}
+    .invoice-btn:active{transform:translateY(1px)}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22c3a6;color:#0b0f18;padding:.75rem 1.1rem;border-radius:12px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:10000}
+    .toast.show{opacity:1}
+    .loader-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999}
+    .loader{width:54px;height:54px;border:6px solid rgba(255,255,255,.25);border-top-color:#22c3a6;border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    [data-theme="light"] body{background:linear-gradient(135deg,#f3fbf7,#eaf2ff,#ffe9ef)}
+    [data-theme="light"] .btn-adding{background:#22c3a6 !important;color:#0b0f18 !important}
+
+    .delivery-controls,.vat-controls{
+      display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:flex-end
+    }
+    .delivery-controls input[type="number"], .vat-controls input[type="number"]{width:90px}
+    .delivery-controls .currency{opacity:.8;font-weight:600}
+    .delivery-toggle{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;color:var(--muted);cursor:pointer;user-select:none}
+    .delivery-toggle input{accent-color:#22c3a6;width:18px;height:18px}
+    .delivery-controls input[disabled]{opacity:.45;cursor:not-allowed}
+    .delivery-amount{font-weight:700}
+    .empty-cart{color:var(--muted);text-align:center;padding:1.5rem 0;font-weight:600}
+
+    .lock-btn{padding:6px 10px;border:1px solid var(--line);background:transparent;color:var(--fg);font-weight:800;border-radius:10px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Orden Rápida</h1>
+      <div class="controls">
+        <button id="lang" class="toggle" aria-label="EN/ES">ES</button>
+        <button id="theme" class="toggle" aria-label="Light/Dark">Oscuro</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="card">
+        <h2 class="title">Opciones</h2>
+        <div id="opts" class="grid"></div>
+
+        <div class="card" style="margin-top:14px">
+          <h2 class="title">Extras</h2>
+          <div id="extras" class="ex-list"></div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2 class="title">Resumen</h2>
+        <div id="cart" class="cart" aria-live="polite" aria-atomic="true"></div>
+
+        <div class="totals" aria-live="polite" aria-atomic="true">
+          <div class="row"><div>Subtotal</div><div id="subtotal">—</div></div>
+
+          <div class="row delivery-row">
+            <div>Delivery Fee</div>
+            <div class="delivery-controls">
+              <label class="delivery-toggle">
+                <input id="delivery-enabled" type="checkbox" checked>
+                <span id="delivery-toggle-label">Aplicar</span>
+              </label>
+              <input id="delivery-fee" type="number" value="5.00" step="0.01" min="0" style="border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;">
+              <span class="currency">USD</span>
+              <span id="delivery-amount" class="delivery-amount"></span>
+            </div>
+          </div>
+
+          <!-- NEW: VAT/IVA controls -->
+          <div class="row vat-row">
+            <div>IVA / VAT</div>
+            <div class="vat-controls">
+              <input id="vat-rate" type="number" value="15" min="0" max="100" step="0.1"
+                     style="border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:4px;padding:4px;text-align:right;">
+              <span>%</span>
+              <button id="vat-lock" class="lock-btn" aria-pressed="true" title="Bloquear IVA">🔒</button>
+              <span id="vat-amount" class="delivery-amount"></span>
+            </div>
+          </div>
+
+          <div class="row"><div class="grand">TOTAL</div><div id="total" class="grand">—</div></div>
+        </div>
+
+        <div class="customer-form">
+          <label>Nombre del Cliente<input id="customer-name" class="input-field" required></label>
+          <label>Dirección de Entrega<input id="delivery-address" class="input-field" required></label>
+          <label>WhatsApp Number<input id="whatsapp" class="input-field" value="+593 ** *** ****" required></label>
+          <label>Customer Email<input id="customer-email" class="input-field" type="email" required></label>
+          <label>Business Email<input id="business-email" class="input-field" type="email" value="" required></label>
+        </div>
+
+        <button id="accept" class="accept-btn">Send to Sheets (via Worker)</button>
+        <button id="invoice" class="invoice-btn">Send Full Invoice (PDF via Worker)</button>
+      </aside>
+    </div>
+  </div>
+
+  <div id="loader" class="loader-overlay"><div class="loader"></div></div>
+  <div id="toast" class="toast">¡Pedido enviado con éxito!</div>
+
+  <script>
+    // ---------- Config ----------
+    const DEFAULT_VAT_PCT = 15;  // default 15%
+    const LOCALE = { es: 'es-EC', en: 'en-US' };
+    let currentLang = 'es';
+
+    const WORKER_BASE = 'https://soft-firefly-ac99.meeka-monsta-dooku.workers.dev';
+    const ENDPOINTS = {
+      sheets: `${WORKER_BASE}/api/send-to-sheets`,
+      invoice: `${WORKER_BASE}/api/send-invoice`
+    };
+
+    // LocalStorage keys for VAT state
+    const VAT_PCT_KEY = 'vatRatePct';
+    const VAT_LOCK_KEY = 'vatLocked';
+
+    // ---------- i18n bits ----------
+    const TRANSLATIONS = {
+      es: {
+        deliveryApply: 'Aplicar',
+        deliveryApplied: 'Aplicado',
+        deliveryOptional: 'Opcional',
+        emptyCart: 'Carrito vacío',
+        add: '+ Agregar',
+        remove: '− Quitar',
+        addShort: '+',
+        removeShort: '−',
+        fillFields: 'Por favor completa todos los campos',
+        cartEmptyError: 'Carrito vacío',
+        orderSuccess: '¡Pedido enviado con éxito!',
+        invoiceSuccess: '¡Factura enviada con éxito!',
+        orderError: 'Error al enviar. Intenta de nuevo.',
+        invoiceError: 'Error al enviar factura. Intenta de nuevo.',
+        lockVAT: 'Bloquear IVA',
+        unlockVAT: 'Desbloquear IVA'
+      },
+      en: {
+        deliveryApply: 'Apply',
+        deliveryApplied: 'Applied',
+        deliveryOptional: 'Optional',
+        emptyCart: 'Cart is empty',
+        add: '+ Add',
+        remove: '− Remove',
+        addShort: '+',
+        removeShort: '−',
+        fillFields: 'Please fill out all fields',
+        cartEmptyError: 'Cart is empty',
+        orderSuccess: 'Order sent successfully!',
+        invoiceSuccess: 'Invoice sent successfully!',
+        orderError: 'Unable to send order. Try again.',
+        invoiceError: 'Unable to send invoice. Try again.',
+        lockVAT: 'Lock VAT',
+        unlockVAT: 'Unlock VAT'
+      }
+    };
+    const $ = s => document.querySelector(s);
+    const t = v => typeof v === 'string' ? v : v[currentLang];
+    const money = c => (c/100).toLocaleString(LOCALE[currentLang], { style:'currency', currency:'USD' });
+
+    function updateThemeButtonText(){
+      const btn = document.getElementById('theme');
+      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = (cur === 'dark') ? 'light' : 'dark';
+      const label = (currentLang === 'es')
+        ? (next === 'light' ? 'Claro' : 'Oscuro')
+        : (next === 'light' ? 'Light' : 'Dark');
+      btn.textContent = label;
+      btn.setAttribute('aria-label', label);
+    }
+
+    // ---------- Catalog ----------
+    const OPTIONS = [
+      { id:'op1', name:{es:'Opción 1',en:'Option 1'}, desc:{es:'Tortilla + Huevos + Chorizo + Bebida', en:'Tortilla + Eggs + Sausage + Drink'}, priceCents:320 },
+      { id:'op2', name:{es:'Opción 2',en:'Option 2'}, desc:{es:'Tortilla + Chorizo + Bebida', en:'Tortilla + Sausage + Drink'}, priceCents:270 },
+      { id:'op3', name:{es:'Opción 3',en:'Option 3'}, desc:{es:'Tortilla + Huevos + Bebida', en:'Tortilla + Eggs + Drink'}, priceCents:270 },
+      { id:'op4', name:{es:'Opción 4',en:'Option 4'}, desc:{es:'2 Tortilla + 2 Huevos + 2 Chorizo + 2 Bebida', en:'2 Tortillas + 2 Eggs + 2 Sausages + 2 Drinks'}, priceCents:640 }
+    ];
+    const EXTRAS = [
+      { id:'ex_cafe', name:{es:'Café',en:'Coffee'}, priceCents:70 },
+      { id:'ex_cola', name:{es:'Cola',en:'Cola'}, priceCents:70 },
+      { id:'ex_chorizo', name:{es:'Chorizo',en:'Sausage'}, priceCents:70 },
+      { id:'ex_huevo', name:{es:'Huevo',en:'Egg'}, priceCents:70 },
+      { id:'ex_tortilla', name:{es:'Tortilla',en:'Tortilla'}, priceCents:70 }
+    ];
+
+    // ---------- Delivery helpers ----------
+    const deliveryToggle = () => $('#delivery-enabled');
+    const deliveryFeeInput = () => $('#delivery-fee');
+    const deliveryAmountEl = () => $('#delivery-amount');
+    const deliveryToggleLabel = () => $('#delivery-toggle-label');
+
+    function getCopy(){ return TRANSLATIONS[currentLang]; }
+
+    function highlightButton(btn){
+      if(!btn) return;
+      btn.classList.add('button-highlight');
+      clearTimeout(btn._highlightTimeout);
+      btn._highlightTimeout = setTimeout(()=>{ btn.classList.remove('button-highlight'); }, 4000);
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if(btn) highlightButton(btn);
+    });
+
+    function getDeliveryCents(){
+      const toggle = deliveryToggle();
+      const input = deliveryFeeInput();
+      if(!toggle || !input || !toggle.checked) return 0;
+      const value = parseFloat(input.value);
+      if(Number.isFinite(value) && value >= 0) return Math.round(value * 100);
+      return 0;
+    }
+    function updateDeliveryUI(subtotalCents){
+      const toggle = deliveryToggle();
+      const input = deliveryFeeInput();
+      const amount = deliveryAmountEl();
+      const label = deliveryToggleLabel();
+      if(!toggle || !input) return;
+      const copy = getCopy();
+      const enabled = toggle.checked;
+      input.disabled = !enabled;
+      if(label) label.textContent = enabled ? copy.deliveryApplied : copy.deliveryApply;
+      const deliveryCents = getDeliveryCents();
+      if(amount){ amount.textContent = enabled ? money(deliveryCents) : copy.deliveryOptional; }
+      if(!enabled && input.value){ input.dataset.cachedValue = input.value; }
+      if(enabled && input.dataset.cachedValue && !input.value){ input.value = input.dataset.cachedValue; }
+      if(enabled && subtotalCents === 0 && !input.value){ input.value = '0.00'; }
+    }
+
+    // ---------- VAT helpers ----------
+    const vatInput = () => $('#vat-rate');
+    const vatLockBtn = () => $('#vat-lock');
+    const vatAmountEl = () => $('#vat-amount');
+
+    function getSavedVatPct(){
+      const n = parseFloat(localStorage.getItem(VAT_PCT_KEY));
+      return Number.isFinite(n) && n >= 0 ? n : DEFAULT_VAT_PCT;
+    }
+    function setSavedVatPct(n){
+      localStorage.setItem(VAT_PCT_KEY, String(n));
+    }
+    function isVatLocked(){
+      const v = localStorage.getItem(VAT_LOCK_KEY);
+      return v == null ? true : v === 'true';
+    }
+    function setVatLocked(locked){
+      localStorage.setItem(VAT_LOCK_KEY, locked ? 'true' : 'false');
+    }
+    function getVatPct(){
+      const el = vatInput();
+      const n = parseFloat(el && el.value);
+      return Number.isFinite(n) && n >= 0 ? n : DEFAULT_VAT_PCT;
+    }
+    function vatDecimal(){ return getVatPct() / 100; }
+
+    function updateVatUI(){
+      const input = vatInput();
+      const lock = vatLockBtn();
+      const locked = isVatLocked();
+      if(input){
+        input.disabled = locked;
+        if(!input.value) input.value = String(getSavedVatPct());
+      }
+      if(lock){
+        lock.textContent = locked ? '🔒' : '🔓';
+        lock.setAttribute('aria-pressed', String(locked));
+        lock.title = locked ? getCopy().lockVAT : getCopy().unlockVAT;
+      }
+    }
+
+    // ---------- Build UI ----------
+    function getCatalogItem(id){
+      return OPTIONS.find(x=>x.id===id) || EXTRAS.find(x=>x.id===id);
+    }
+    function getItemTexts(id, fallback){
+      const item = getCatalogItem(id) || fallback;
+      if(!item) return { name: id, desc: null };
+      const name = item.name ? t(item.name) : (fallback?.name || id);
+      const desc = item.desc ? t(item.desc) : (fallback?.desc || null);
+      return { name, desc };
+    }
+    function generateInvoiceNumber() {
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
+      const random = Math.random().toString(36).slice(2,7).toUpperCase();
+      return `INV-${dateStr}-${random}`;
+    }
+    function add(item){
+      const base = cart.get(item.id) || { ...item, qty:0 };
+      const { name, desc } = getItemTexts(item.id, base);
+      base.name = name; base.desc = desc;
+      base.priceCents = item.priceCents ?? base.priceCents;
+      base.qty++;
+      cart.set(item.id, base);
+      highlightButton(document.querySelector(`button[data-act="add"][data-id="${item.id}"]`));
+      render();
+    }
+    function rem(item){
+      if(!cart.has(item.id)) return;
+      const line = cart.get(item.id); line.qty--;
+      if(line.qty<=0) cart.delete(item.id); else cart.set(item.id, line);
+      render();
+    }
+
+    function buildOptions(){
+      const host = $('#opts'); host.innerHTML='';
+      const copy = getCopy();
+      OPTIONS.forEach((o,i)=>{
+        const el = document.createElement('div');
+        el.className='opt';
+        el.innerHTML = `
+          <div class="top">
+            <button class="btn50 op${(i%4)+1}">${i+1}</button>
+            <div>
+              <div class="desc">${t(o.desc)} — <strong>${money(o.priceCents)}</strong></div>
+              <div class="actions">
+                <button class="btn" data-act="rem" data-id="${o.id}">${copy.remove}</button>
+                <button class="btn" data-act="add" data-id="${o.id}">${copy.add}</button>
+              </div>
+            </div>
+          </div>`;
+        host.appendChild(el);
+      });
+    }
+    function buildExtras(){
+      const host = $('#extras'); host.innerHTML='';
+      const copy = getCopy();
+      EXTRAS.forEach(e=>{
+        const row = document.createElement('div');
+        row.className='ex-row';
+        row.innerHTML = `
+          <div class="ex-left">${t(e.name)} <span class="ex-price">${money(e.priceCents)}</span></div>
+          <div class="actions">
+            <button class="btn" data-act="rem" data-id="${e.id}">${copy.removeShort}</button>
+            <button class="btn" data-act="add" data-id="${e.id}">${copy.add}</button>
+          </div>`;
+        host.appendChild(row);
+      });
+    }
+
+    // ---------- State ----------
+    const cart = new Map();
+
+    function render(){
+      const box = $('#cart'); const copy = getCopy();
+      box.innerHTML='';
+      let subtotal = 0;
+      cart.forEach(line=>{
+        subtotal += line.priceCents * line.qty;
+        const texts = getItemTexts(line.id, line);
+        line.name = texts.name; line.desc = texts.desc;
+        const el = document.createElement('div');
+        el.className='line';
+        const displayName = texts.desc && texts.desc !== texts.name ? `${texts.name} (${texts.desc})` : texts.name;
+        el.innerHTML = `
+          <div>${displayName}</div>
+          <div class="qtybox">
+            <button class="btn" data-act="rem" data-id="${line.id}">${copy.removeShort}</button>
+            <span>${line.qty}</span>
+            <button class="btn" data-act="add" data-id="${line.id}">${copy.addShort}</button>
+          </div>
+          <div><strong>${money(line.priceCents*line.qty)}</strong></div>`;
+        box.appendChild(el);
+      });
+      if(cart.size === 0) box.innerHTML = `<div class="empty-cart">${copy.emptyCart}</div>`;
+
+      // Delivery
+      const deliveryCents = getDeliveryCents();
+
+      // VAT
+      const vatCents = Math.round(subtotal * vatDecimal());
+      const total = subtotal + vatCents + deliveryCents;
+
+      $('#subtotal').textContent = money(subtotal);
+      const vatAmt = vatAmountEl(); if(vatAmt) vatAmt.textContent = `${money(vatCents)} (${getVatPct().toFixed(1)}%)`;
+      $('#total').textContent = money(total);
+
+      updateDeliveryUI(subtotal);
+      updateVatUI();
+    }
+
+    // Delivery controls events
+    const deliveryToggleEl = deliveryToggle();
+    if(deliveryToggleEl){ deliveryToggleEl.addEventListener('change', render); }
+    const deliveryInputEl = deliveryFeeInput();
+    if(deliveryInputEl){
+      deliveryInputEl.addEventListener('input', ()=>{ if(parseFloat(deliveryInputEl.value) < 0) deliveryInputEl.value = '0'; render(); });
+      deliveryInputEl.addEventListener('blur', ()=>{ const v = parseFloat(deliveryInputEl.value); deliveryInputEl.value = Number.isFinite(v) ? Math.max(0,v).toFixed(2) : ''; render(); });
+    }
+
+    // VAT controls events
+    if(vatInput()){
+      // initialize from saved values
+      vatInput().value = String(getSavedVatPct());
+      updateVatUI();
+
+      vatInput().addEventListener('input', ()=>{
+        const v = parseFloat(vatInput().value);
+        if(Number.isFinite(v) && v >= 0){
+          setSavedVatPct(v);
+          render();
+        }
+      });
+      vatInput().addEventListener('blur', ()=>{
+        const v = parseFloat(vatInput().value);
+        const clamped = Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : DEFAULT_VAT_PCT;
+        vatInput().value = clamped.toFixed(1);
+        setSavedVatPct(clamped);
+        render();
+      });
+    }
+    if(vatLockBtn()){
+      vatLockBtn().addEventListener('click', ()=>{
+        const locked = !isVatLocked();
+        setVatLocked(locked);
+        updateVatUI();
+      });
+    }
+
+    // Language & theme
+    $('#lang').addEventListener('click', ()=>{
+      currentLang = currentLang==='es' ? 'en' : 'es';
+      $('#lang').textContent = currentLang.toUpperCase();
+      buildOptions(); buildExtras(); render(); updateThemeButtonText();
+    });
+    $('#theme').addEventListener('click', ()=>{
+      const root = document.documentElement;
+      const cur = root.getAttribute('data-theme') || 'dark';
+      const next = cur==='dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      updateThemeButtonText();
+    });
+
+    document.body.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-act]');
+      if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      const act = btn.getAttribute('data-act');
+      if(!id || !act) return;
+      const catalog = getCatalogItem(id) || cart.get(id);
+      if(!catalog) return;
+      const { name, desc } = getItemTexts(id, catalog);
+      const payload = { id, name, desc, priceCents: catalog.priceCents };
+      if(act==='add') add(payload); else rem(payload);
+    });
+
+    // ---------- Build payload & send ----------
+    async function collectData() {
+      const copy = getCopy();
+      const inputs = ['customer-name', 'delivery-address', 'whatsapp', 'customer-email', 'business-email'];
+      for(const id of inputs) if(!$(`#${id}`).value) throw new Error(copy.fillFields);
+      if(cart.size === 0) throw new Error(copy.cartEmptyError);
+
+      const normalizedItems = Array.from(cart.values()).map(rawLine => {
+        const fallback = getCatalogItem(rawLine.id) || rawLine;
+        const texts = getItemTexts(rawLine.id, fallback);
+        const qty = parseInt(rawLine.qty, 10) || 0;
+        const unitCents = Number.isFinite(rawLine.priceCents) ? rawLine.priceCents : (fallback?.priceCents ?? 0);
+        const lineTotalCents = unitCents * qty;
+        return {
+          id: rawLine.id || fallback?.id || '',
+          name: texts.name,
+          description: texts.desc || texts.name,
+          quantity: qty,
+          unitPriceCents: unitCents,
+          unitPrice: (unitCents / 100).toFixed(2),
+          lineTotalCents,
+          lineTotal: (lineTotalCents / 100).toFixed(2)
+        };
+      }).filter(i => i.quantity > 0);
+
+      const itemsSubtotal = normalizedItems.reduce((sum, i) => sum + i.lineTotalCents, 0);
+      const deliveryEnabled = deliveryToggle() ? deliveryToggle().checked : true;
+      const deliveryCents = deliveryEnabled ? getDeliveryCents() : 0;
+      const vatPct = getVatPct();
+      const vatDec = vatPct / 100;
+      const vatCents = Math.round(itemsSubtotal * vatDec);
+      const totalCents = itemsSubtotal + vatCents + deliveryCents;
+
+      return {
+        date: new Date().toLocaleDateString(LOCALE[currentLang]),
+        invoiceNumber: generateInvoiceNumber(),
+        customerName: $('#customer-name').value,
+        deliveryAddress: $('#delivery-address').value,
+        whatsapp: $('#whatsapp').value,
+        customerEmail: $('#customer-email').value,
+        businessEmail: $('#business-email').value,
+
+        subtotal: (itemsSubtotal / 100).toFixed(2),
+        deliveryFee: (deliveryCents / 100).toFixed(2),
+        vat: (vatCents / 100).toFixed(2),
+        total: (totalCents / 100).toFixed(2),
+
+        deliveryApplied: deliveryEnabled,
+        // send VAT so Apps Script uses it
+        vatRatePct: vatPct,
+        vatRateDecimal: vatDec,
+
+        orderItems: normalizedItems
+      };
+    }
+
+    const loader = $('#loader'); const toast  = $('#toast');
+    function showToast(msg, ms=1800){ toast.textContent = msg || getCopy().orderSuccess; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), ms); }
+
+    $('#accept').addEventListener('click', async ()=>{
+      const copy = getCopy(); loader.style.display = 'flex';
+      try {
+        const data = await collectData();
+        const res = await fetch(ENDPOINTS.sheets, { method:'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' }});
+        const out = await res.json().catch(()=>null);
+        loader.style.display = 'none';
+        if(res.ok && out && out.success){ showToast(copy.orderSuccess); cart.clear(); render(); }
+        else { throw new Error((out && (out.error || out.message)) || copy.orderError); }
+      } catch(err) { loader.style.display = 'none'; showToast(err.message || copy.orderError, 3000); }
+    });
+
+    $('#invoice').addEventListener('click', async ()=>{
+      const copy = getCopy(); loader.style.display = 'flex';
+      try {
+        const data = await collectData();
+        const res = await fetch(ENDPOINTS.invoice, { method:'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' }});
+        const resp = await res.json().catch(()=>null);
+        loader.style.display = 'none';
+        if(res.ok && resp && resp.success){
+          const phone = data.whatsapp.replace(/\D/g, '');
+          const parts = [`Invoice ${data.invoiceNumber}`, `Total: $${data.total}`];
+          if(resp.pdfUrl) parts.push(`PDF: ${resp.pdfUrl}`);
+          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(parts.join('. '))}`, '_blank');
+          showToast(copy.invoiceSuccess); cart.clear(); render();
+        } else { throw new Error((resp && (resp.error || resp.message)) || copy.invoiceError); }
+      } catch(err) { loader.style.display = 'none'; showToast(err.message || copy.invoiceError, 3000); }
+    });
+
+    // ---------- Init ----------
+    (function init(){
+      document.documentElement.setAttribute('data-theme','dark');
+      updateThemeButtonText();
+      // prime VAT UI with saved values
+      if(vatInput()){ vatInput().value = String(getSavedVatPct()); }
+      updateVatUI();
+      buildOptions(); buildExtras(); render();
+    })();
+  </script>
+</body>
+</html>
